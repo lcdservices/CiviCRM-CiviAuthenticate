@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<extension version="2.1" type="plugin" group="authentication">
+<extension version="2.1" type="plugin" group="authentication" method="upgrade">
 	<name>Authentication - CiviCRM</name>
 	<author>Henry Bennett, Brian Shaughnessy</author>
 	<creationDate>18 June 2011</creationDate>
