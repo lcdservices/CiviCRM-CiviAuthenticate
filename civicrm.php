@@ -182,28 +182,27 @@ class plgAuthenticationCiviCRM extends JPlugin
     // Get a list of User Groups to work with
     // we will use these to check against and set the users main group level
     // if a user belongs to another group then that will not be changed
-    //
+    $groups = array();
+
     // First cyle thru the assignments for membership STATUS
     // By default we have enabled 8 levels of membership STATUS. If you have more
     // than 8 then you need to modify the section below.
-    //
-    $i=1;
-    while ( $i <= 8 ) {
-      $group_array_temp[] = $this->params->get( 'user_group_'.$i );
-      $i++ ;
+    if ( $this->params->get('advanced_features') ) {
+      for ( $i = 1; $i <= 8; $i++ ) {
+        $groups[] = $this->params->get( 'user_group_'.$i );
+      }
     }
 
     // Then cycle thru the assignment for membership TYPE
     // By default we have enabled 8 levels of membership TYPE. If you have more
     // than 8 then you need to modify the section below.
-    //
-    $i=1;
-    while ( $i <= 8 ) {
-      $group_array_temp[] = $this->params->get( 'TACL_user_group_'.$i );
-      $i++ ;
+    if ( $this->params->get('advanced_membership_features') ) {
+      for ( $i = 1; $i <= 8; $i++ ) {
+        $groups[] = $this->params->get( 'TACL_user_group_'.$i );
+      }
     }
 
-    return array_unique($group_array_temp);
+    return array_unique($groups);
   }
 
   function _checkMembership($redirectURLs, $user, $response, $result) {
