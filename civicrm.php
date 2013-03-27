@@ -69,7 +69,7 @@ class plgAuthenticationCiviCRM extends JPlugin
 		// Joomla does not like blank passwords
 		if (empty($credentials['password']))
 		{
-			$response->status = JAUTHENTICATE_STATUS_FAILURE;
+			$response->status = JAuthentication::STATUS_FAILURE;
 			$response->error_message = JText::_('JGLOBAL_AUTH_EMPTY_PASS_NOT_ALLOWED');
 			return false;
 		}
@@ -145,7 +145,6 @@ class plgAuthenticationCiviCRM extends JPlugin
 		$response->type = 'CiviCRM';
 
 
-
 		// Get a database object
 		$db	= JFactory::getDbo();
 		$query	= $db->getQuery(true);
@@ -169,6 +168,12 @@ class plgAuthenticationCiviCRM extends JPlugin
 				$response->username = $user->username;
 				$response->email = $user->email;
 				$response->fullname = $user->name;
+				if (JFactory::getApplication()->isAdmin()) {
+					$response->language = $user->getParam('admin_language');
+				}
+				else {
+					$response->language = $user->getParam('language');
+				}
 
 				// bypass CiviMember check for Joomla admins
 				// We need to use JFactory::getUser to get the object for authorise() function
@@ -176,30 +181,18 @@ class plgAuthenticationCiviCRM extends JPlugin
 				$adminTestUser = JFactory::getUser($result->id);
 				if ($adminTestUser->authorise('core.login.admin'))
 					{
-					$response->status = JAUTHENTICATE_STATUS_SUCCESS;
+					$response->status = JAuthentication::STATUS_SUCCESS;
 					$response->error_message = '';
 					}
 				else {
-					// We have now authenticated against the Joomla user table. From here we 
-					// need to find the CiviCRM user ID by using UFMatch
-					// Initiate CiviCRM
-					require_once JPATH_ROOT.'/'.'administrator/components/com_civicrm/civicrm.settings.php';
-					require_once 'CRM/Core/Config.php';
-					$civiConfig =& CRM_Core_Config::singleton( );
-
-					// Find the CiviCRM ContactID
-					require_once 'CRM/Core/BAO/UFMatch.php';
-					CRM_Core_BAO_UFMatch::synchronizeUFMatch( $user->name, $result->id, $user->email, 'Joomla' );
-					$contactID = CRM_Core_BAO_UFMatch::getContactId( $result->id );
+					$contactID = $this->getCiviContact($user);
 					$contactID = $contactID+0; //ensure integer type conversion
 
-					// Find the membership records for the ContactID
-					require_once 'api/v2/Membership.php';
-					$membership = civicrm_contact_memberships_get($contactID);
+					$membership = $this->getContactMembership($contactID);
 
 					// Make sure there is a membership record.
 					if ($membership['is_error'] == 1){
-						$response->status = JAUTHENTICATE_STATUS_FAILURE;
+						$response->status = JAuthentication::STATUS_FAILURE;
 						$response->error_message = 'no memberships for this contact';
 						ob_end_clean();
 						header($civicrm_redirect_old_membership); 
@@ -219,7 +212,7 @@ class plgAuthenticationCiviCRM extends JPlugin
 						$membership2 = $a;
 						$membership_status = $membership2[status_id];
 						$membership_status_params = array( 'id' => $membership_status );
-						$membership_status_details = civicrm_membership_statuses_get( $membership_status_params );
+						$membership_status_details = $this->getMembershipStatuses( $membership_status_params );
 						$membership_status_iscurrent = $membership_status_details[$membership_status]['is_current_member'];
 
 						// print("<pre>".print_r($membership2,true)."</pre>");
@@ -233,7 +226,7 @@ class plgAuthenticationCiviCRM extends JPlugin
 						// or use status rule configured current flag (option found in plugin parameter)
 						if ( ( $civicrm_use_current && $membership_status_iscurrent ) ||
 							 ( !$civicrm_use_current && $membership_status <= $civicrm_is_current ) ) {
-							$response->status = JAUTHENTICATE_STATUS_SUCCESS;
+							$response->status = JAuthentication::STATUS_SUCCESS;
 							$response->error_message = '';
 							$membership_status_old = 'false';
 							$user = JFactory::getUser($result->id);
@@ -298,10 +291,7 @@ class plgAuthenticationCiviCRM extends JPlugin
 							$expired_redirect = $civicrm_redirect_expired;
 						} elseif ( $civicrm_redirect_expired_method == 0 ) { //contrib page
 							//generate token
-							require_once 'CRM/Contact/BAO/Contact/Utils.php';
-							require_once 'CRM/Utils/Date.php';
-							$checksumValue = null;
-							$checksumValue = CRM_Contact_BAO_Contact_Utils::generateChecksum( $contactID, null, 1 );
+							$checksumValue = $this->generateToken($contactID);
 							
 							//build url; append contact id and checksum
 							$expired_redirect = $civicrm_redirect_expired_contribpage.'&id='.$civicrm_redirect_expired_contribpageid;
@@ -309,7 +299,7 @@ class plgAuthenticationCiviCRM extends JPlugin
 							$expired_redirect = 'Location: '.JRoute::_( $expired_redirect, false );
 						}
 						//echo $expired_redirect; exit();
-						$response->status = JAUTHENTICATE_STATUS_FAILURE;
+						$response->status = JAuthentication::STATUS_FAILURE;
 						$response->error_message = 'Membership has expired.';
 						ob_end_clean();
 						header($expired_redirect); 
@@ -317,7 +307,7 @@ class plgAuthenticationCiviCRM extends JPlugin
 						
 					} elseif ( $membership_status_old == 'true' ) { //not current, not expired
 					
-						$response->status = JAUTHENTICATE_STATUS_FAILURE;
+						$response->status = JAuthentication::STATUS_FAILURE;
 						$response->error_message = 'Membership is not valid.';
 						ob_end_clean();
 						header($civicrm_redirect_old_membership); 
@@ -327,15 +317,15 @@ class plgAuthenticationCiviCRM extends JPlugin
 				//LCD end revised mechanism					
 				}
 			} else {
-				$response->status = JAUTHENTICATE_STATUS_FAILURE;
-				$response->error_message = 'Invalid username and password';
+				$response->status = JAuthentication::STATUS_FAILURE;
+				$response->error_message = JText::_('JGLOBAL_AUTH_INVALID_PASS');
 				ob_end_clean();
 				header($civicrm_redirect_bad_password); 
 				exit;
 			}
 		} else { //No username found
-			$response->status = JAUTHENTICATE_STATUS_FAILURE;
-			$response->error_message = 'Invalid username and password';
+			$response->status = JAuthentication::STATUS_FAILURE;
+			$response->error_message = JText::_('JGLOBAL_AUTH_INVALID_PASS');
 			ob_end_clean();
 			header($civicrm_redirect_no_match); 
 			exit;
@@ -348,6 +338,42 @@ class plgAuthenticationCiviCRM extends JPlugin
 		$this->onAuthenticate($credentials, $options, $response);
 	}
 
+	function getCiviContact($user) {
+		// We have now authenticated against the Joomla user table. From here we 
+		// need to find the CiviCRM user ID by using UFMatch
+		// Initiate CiviCRM
+		require_once JPATH_ROOT.'/'.'administrator/components/com_civicrm/civicrm.settings.php';
+		require_once 'CRM/Core/Config.php';
+		$civiConfig =& CRM_Core_Config::singleton( );
+
+		// Find the CiviCRM ContactID
+		require_once 'CRM/Core/BAO/UFMatch.php';
+		CRM_Core_BAO_UFMatch::synchronizeUFMatch( $user->name, $user->id, $user->email, 'Joomla' );
+		$contactID = CRM_Core_BAO_UFMatch::getContactId( $user->id );
+		return $contactID;
+	}
+	
+	function getContactMembership($contactID) {
+		// Find the membership records for the ContactID
+		require_once 'api/v2/Membership.php';
+		$membership = civicrm_contact_memberships_get($contactID);
+		return $membership;
+	}
+	
+	function generateToken($contactID) {
+		require_once 'CRM/Contact/BAO/Contact/Utils.php';
+		require_once 'CRM/Utils/Date.php';
+		$checksumValue = null;
+		$checksumValue = CRM_Contact_BAO_Contact_Utils::generateChecksum( $contactID, null, 1 );
+		return $checksumValue;		
+	}
+	
+	function  getMembershipStatuses( $membership_status_params ) {
+		require_once 'api/v2/Membership.php';
+		$membership_status_details = civicrm_membership_statuses_get( $membership_status_params );
+		return  $membership_status_details;
+	}
+	
 	function GetReturnURL($itemid, $method){
 		$link = '';
 		if ($method == 0) {
