@@ -27,14 +27,17 @@ class plgauthenticationcivicrmInstallerScript
 	{
 		// $parent is the class calling this method
 		echo '<p>' . JText::_('PLG_CIVICRM_UNINSTALL_TEXT') . '</p>';
-		$filename = 'civimembershiplevels.php';
-	      	$path = JPATH_SITE.DS.'administrator'.DS.'components'.DS.'com_civicrm'.DS.'civicrm'.DS.'joomla'.DS.'site'.DS.'elements';
-		echo '<p>Removing file from: '.$path.DS.$filename.'</p>';
-		JFile::delete($path.DS.$filename);
+
+    $filename = 'civimembershiplevels.php';
+	  $path = JPATH_SITE.'/administrator/components/com_civicrm/civicrm/joomla/site/elements';
+		echo '<p>Removing file from: '.$path.'/'.$filename.'</p>';
+
+    JFile::delete($path.'/'.$filename);
 
 		$filename = 'civimembershiptypes.php';
-		echo '<p>Removing file from: '.$path.DS.$filename.'</p>';
-		JFile::delete($path.DS.$filename);
+		echo '<p>Removing file from: '.$path.'/'.$filename.'</p>';
+
+    JFile::delete($path.'/'.$filename);
 
 		echo '<p>Important! Failure to enable an authentication module will likely result in your being locked out of your site!</p>';
 
@@ -75,18 +78,18 @@ class plgauthenticationcivicrmInstallerScript
 		//
 		if ($type == "install") {
 
-	      		$path1 = JPATH_SITE.DS.'plugins'.DS.'authentication'.DS.'civicrm';
-			$path2 = JPATH_SITE.DS.'administrator'.DS.'components'.DS.'com_civicrm'.DS.'civicrm'.DS.'joomla'.DS.'site'.DS.'elements';
+	    $path1 = JPATH_SITE.'/plugins/authentication/civicrm';
+			$path2 = JPATH_SITE.'/administrator/components/com_civicrm/civicrm/joomla/site/elements';
 
 			$filename = 'civimembershiplevels.php';
-			echo '<p>Move from: '.$path1.DS.$filename.'</p>';
-			echo '<p>To: '.$path2.DS.$filename.'</p>';
-			JFile::copy($path1.DS.$filename, $path2.DS.$filename);
+			echo '<p>Move from: '.$path1.'/'.$filename.'</p>';
+			echo '<p>To: '.$path2.'/'.$filename.'</p>';
+			JFile::copy($path1.'/'.$filename, $path2.'/'.$filename);
 
 			$filename = 'civimembershiptypes.php';
-			echo '<p>Move from: '.$path1.DS.$filename.'</p>';
-			echo '<p>To: '.$path2.DS.$filename.'</p>';
-			JFile::copy($path1.DS.$filename, $path2.DS.$filename);
+			echo '<p>Move from: '.$path1.'/'.$filename.'</p>';
+			echo '<p>To: '.$path2.'/'.$filename.'</p>';
+			JFile::copy($path1.'/'.$filename, $path2.'/'.$filename);
 
 
 			echo '<p>' . JText::_('Done dealing with files injected into CiviCRM ') . '</p>';

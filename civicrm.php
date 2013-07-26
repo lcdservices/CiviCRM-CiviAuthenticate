@@ -51,7 +51,7 @@ class plgAuthenticationCiviCRM extends JPlugin
     if (empty($credentials['password'])) {
       $response->status = JAuthentication::STATUS_FAILURE;
       $response->error_message = JText::_('JGLOBAL_AUTH_EMPTY_PASS_NOT_ALLOWED');
-      return false;
+      return FALSE;
     }
 
     // Initialise variables.
@@ -64,14 +64,19 @@ class plgAuthenticationCiviCRM extends JPlugin
     $response->type = 'CiviCRM';
 
     // Get a database object
-    $db  = JFactory::getDbo();
-    $query  = $db->getQuery(true);
+    $db = JFactory::getDbo();
+    $query = $db->getQuery(TRUE);
 
     $query->select('id, password');
     $query->from('#__users');
 
     //CiviCRM: accommodate username OR email
-    $query->where('username=' . $db->Quote($credentials['username']). 'OR email=' . $db->Quote($credentials['username'])) ;
+    if ( $this->params->get('username_email') ) {
+      $query->where('username='.$db->Quote($credentials['username']).' OR email='.$db->Quote($credentials['username']));
+    }
+    else {
+      $query->where('username='.$db->Quote($credentials['username']));
+    }
 
     $db->setQuery( $query );
     $result = $db->loadObject();
@@ -122,7 +127,6 @@ class plgAuthenticationCiviCRM extends JPlugin
       header($redirectURLs['no_match']);
       exit;
     }
-
   }
 
   /*
@@ -147,21 +151,21 @@ class plgAuthenticationCiviCRM extends JPlugin
     $redirectURLs['old_membership'] = 'Location: '
       .JRoute::_($redirectURLs['old_membership_item']->link
       .'&Itemid='
-      .$redirectURLs['old_membership_itemid'], false);
+      .$redirectURLs['old_membership_itemid'], FALSE);
 
     $redirectURLs['bad_password_itemid'] = $this->params->get('redirect_bad_password');
     $redirectURLs['bad_password_item'] = $menu->getItem( $redirectURLs['bad_password_itemid'] );
     $redirectURLs['bad_password'] = 'Location: '
       .JRoute::_($redirectURLs['bad_password_item']->link
       .'&Itemid='
-      .$redirectURLs['bad_password_itemid'], false);
+      .$redirectURLs['bad_password_itemid'], FALSE);
 
     $redirectURLs['no_match_itemid'] = $this->params->get('redirect_no_match');
     $redirectURLs['no_match_item'] = $menu->getItem( $redirectURLs['no_match_itemid'] );
     $redirectURLs['no_match'] = 'Location: '
       .JRoute::_($redirectURLs['no_match_item']->link
       .'&Itemid='
-      .$redirectURLs['no_match_itemid'], false);
+      .$redirectURLs['no_match_itemid'], FALSE);
 
     //determine how expired redirection will be handled
     $redirectURLs['expired_method'] = $this->params->get('expired_method');
@@ -170,7 +174,7 @@ class plgAuthenticationCiviCRM extends JPlugin
     $redirectURLs['expired'] = 'Location: '
       .JRoute::_($redirectURLs['expired_item']->link
       .'&Itemid='
-      .$redirectURLs['expired_itemid'], false);
+      .$redirectURLs['expired_itemid'], FALSE);
     $redirectURLs['expired_contribpageid'] = $this->params->get('redirect_expired_contribpage');
     $redirectURLs['expired_contribpage'] = 'index.php?option=com_civicrm&task=civicrm/contribute/transact&reset=1&id='
       .$redirectURLs['expired_contribpageid'];
@@ -212,49 +216,60 @@ class plgAuthenticationCiviCRM extends JPlugin
     //CiviCRM: retrieve parameter values
     $civicrm_use_current = $this->params->get('use_current');
     $civicrm_is_current = $this->params->get('is_current_CiviMember');
-    $Civicrm_use_advanced_membership_features = $this->params->get('advanced_membership_features');
+    $civicrm_useAdvancedStatus = $this->params->get('advanced_features_status');
+    $civicrm_useAdvancedType = $this->params->get('advanced_features_type');
 
     $contactID = $this->_getCiviContact($user);
     $contactID = $contactID+0; //ensure integer type conversion
 
     $membership = $this->_getContactMembership($contactID);
+    //echo '<pre>';print_r($membership);exit();
 
     // Make sure there is a membership record.
-    if ($membership['is_error'] == 1){
-      $response->status = JAuthentication::STATUS_FAILURE;
-      $response->error_message = 'no memberships for this contact';
-      ob_end_clean();
-      header($redirectURLs['old_membership']);
-      exit;
+    if ( empty($membership) ){
+      //if blocking access, fail
+      if ( $this->params->get('block_access') ) {
+        $response->status = JAuthentication::STATUS_FAILURE;
+        $response->error_message = 'no memberships for this contact';
+        ob_end_clean();
+        header($redirectURLs['old_membership']);
+        exit;
+      }
+      //if not blocking, proceed
+      else {
+        $response->status = JAuthentication::STATUS_SUCCESS;
+        $response->error_message = '';
+      }
     }
-
-    // the $membership array is a three level array we need to get to
-    // the bottom level strip the top level off the array
-    $membership1 = $membership[$contactID];
 
     // LCD revised membership status check mechanism
     // Cycle through membership records. If a current record is found, authenticate.
     // Else reject and send to old membership redirection page.
-    $membership_status_old = 'true';
-    $status_expired = 'false';
-    foreach ($membership1 as $membership2) {
-      $membership_status = $membership2[status_id];
+    $membership_status_old = TRUE;
+    $status_expired = FALSE;
+    foreach ($membership as $mem) {
+      $membership_status = $mem['status_id'];
       $membership_status_params = array( 'id' => $membership_status );
       $membership_status_details = $this->_getMembershipStatuses( $membership_status_params );
       $membership_status_iscurrent = $membership_status_details[$membership_status]['is_current_member'];
 
-      //CRM_Core_Error::debug_var('membership2',$membership2);
+      //CRM_Core_Error::debug_var('mem',$mem);
 
-      // If they are a a current member then proceed with login.
+      // If they are are a current member then proceed with login.
       // use status_id instead of _status_calc function as the latter does not account for manual overrides
       // or use status rule configured current flag (option found in plugin parameter)
-      if ( ( $civicrm_use_current && $membership_status_iscurrent ) ||
-        ( !$civicrm_use_current && $membership_status <= $civicrm_is_current ) ) {
+      // Also proceed if we are not blocking access
+      if (
+        ( $civicrm_use_current && $membership_status_iscurrent ) ||
+        ( !$civicrm_use_current && $membership_status <= $civicrm_is_current ) ||
+        ( !$this->params->get('block_access') )
+      ) {
         $response->status = JAuthentication::STATUS_SUCCESS;
         $response->error_message = '';
-        $membership_status_old = 'false';
+        $membership_status_old = FALSE;
         $user = JFactory::getUser($result->id);
         $JUserID = $result->id;
+        $correct_group = '';
 
         //CRM_Core_Error::debug_var('$user',$user);
         //CRM_Core_Error::debug_var('$JUserID',$JUserID);
@@ -264,86 +279,79 @@ class plgAuthenticationCiviCRM extends JPlugin
         $current_groups = JUserHelper::getUserGroups($result->id);
         //CRM_Core_Error::debug_var('$current_groups',$current_groups);
 
-        // define $user_matches_group
-        //  1 = the users group matches in both CiviCRM and Joomla = proceed with login
-        //  0 = the user does not match
-        //      set the Joomla group to match CiviCRM level
-        //      according to their membership status
-        $user_matches_group = 0;
-
-        // Set the correct Joomla Access Level for the user
-        //
-        // Have tried checking first and then adding but had *issues*
-        // which I believe are down to being an instance of the user object
-
         //membership status
-        if ($membership_status_iscurrent == true  && $Civicrm_use_advanced_membership_features == true){
-          $correct_group =  $this->params->get( 'user_group_'.$membership_status);
+        if ( $civicrm_useAdvancedStatus ){
+          $correct_group = $this->params->get( 'user_group_'.$membership_status);
           //CRM_Core_Error::debug_var('$correct_group1',$correct_group);
         }
         //membership type
-        else {
-          $correct_group =  $this->params->get( 'TACL_user_group_'.$membership2[membership_type_id]);
+        elseif ( $civicrm_useAdvancedType ) {
+          $correct_group = $this->params->get( 'TACL_user_group_'.$mem[membership_type_id]);
           //CRM_Core_Error::debug_var('$correct_group2',$correct_group);
-
         }
 
-        if (!JUserHelper::addUserToGroup($JUserID, $correct_group)){
-          return new JException(JText::_('Error Adding user to group'));
+        if ( $correct_group ) {
+          if (!JUserHelper::addUserToGroup($JUserID, $correct_group)){
+            return new JException(JText::_('Error Adding user to group'));
+          }
         }
 
-        // Then remove the user from any groups they shouldn't belong to
-        //
+        // remove the user from any groups they shouldn't belong to
         // cycle thru the groups that the user belongs to against the list of groups
         // that we have specified in the plugin Advanced Options that we've already
         // placed in $groups_array.
-        //
-        // This method ignores any other group that a user may belong to (eg Administrators, Super User)
-        foreach ($current_groups as $key=>$value) {
-          if (in_array($value, $group_array, true)) {
+        // this method ignores any other group that a user may belong to (eg Administrators, Super User)
+        foreach ( $current_groups as $key => $value ) {
+          if ( in_array($value, $group_array, TRUE) ) {
             // group was found in array
-            // Let's now check that the group we are asigned is the correct level
-            if ($value !== $this->params->get( 'user_group_'.$membership_status )){
+            // let's now check that the group we are asigned is the correct level
+            if ( $value !== $this->params->get( 'user_group_'.$membership_status ) ){
               // and remove it if it isn't the right level
               plgAuthenticationCiviCRM::_removeUserFromGroup($value, $JUserID);
             }
           }
-
         }
-      } elseif ( $membership_status_details[$membership_status]['is_current_member'] == false ) {
-        $status_expired = 'true';
+      }
+      elseif ( $membership_status_details[$membership_status]['is_current_member'] == FALSE ) {
+        $status_expired = TRUE;
       }
     }
-    //we now know if the membership is current, expired, or other
-    if ( $membership_status_old == 'true' && $status_expired == 'true' ) { //expired
 
-      //need to decide if we're redirecting to a menu or contrib page
-      if ( $redirectURLs['expired_method'] == 1 ) { //menu
-        $expired_redirect = $redirectURLs['expired'];
-      } elseif ( $redirectURLs['expired_method'] == 0 ) { //contrib page
-        //generate token
-        $checksumValue = $this->_generateToken($contactID);
+    //process based on status IF a membership record exists
+    //if we have chosen not to block access, we need to skip this when the user has no mem records at all
+    if ( !empty($membership) ) {
+      //we now know if the membership is current, expired, or other
+      if ( $membership_status_old && $status_expired ) { //expired
 
-        //build url; append contact id and checksum
-        $expired_redirect = $redirectURLs['expired_contribpage'].'&id='.$redirectURLs['expired_contribpageid'];
-        $expired_redirect = $expired_redirect.'&cs='.$checksumValue.'&cid='.$contactID;
-        $expired_redirect = 'Location: '.JRoute::_( $expired_redirect, false );
+        //need to decide if we're redirecting to a menu or contrib page
+        if ( $redirectURLs['expired_method'] == 1 ) { //menu
+          $expired_redirect = $redirectURLs['expired'];
+        }
+        elseif ( $redirectURLs['expired_method'] == 0 ) { //contrib page
+          //generate token
+          $checksumValue = $this->_generateToken($contactID);
+
+          //build url; append contact id and checksum
+          $expired_redirect = $redirectURLs['expired_contribpage'].'&id='.$redirectURLs['expired_contribpageid'];
+          $expired_redirect = $expired_redirect.'&cs='.$checksumValue.'&cid='.$contactID;
+          $expired_redirect = 'Location: '.JRoute::_( $expired_redirect, FALSE );
+        }
+        //echo $expired_redirect; exit();
+        $response->status = JAuthentication::STATUS_FAILURE;
+        $response->error_message = 'Membership has expired.';
+        ob_end_clean();
+        header($expired_redirect);
+        exit;
+
       }
-      //echo $expired_redirect; exit();
-      $response->status = JAuthentication::STATUS_FAILURE;
-      $response->error_message = 'Membership has expired.';
-      ob_end_clean();
-      header($expired_redirect);
-      exit;
-
-    } elseif ( $membership_status_old == 'true' ) { //not current, not expired
-
-      $response->status = JAuthentication::STATUS_FAILURE;
-      $response->error_message = 'Membership is not valid.';
-      ob_end_clean();
-      header($redirectURLs['old_membership']);
-      exit;
-
+      //not current, not expired, and we are blocking access
+      elseif ( $membership_status_old && $this->params->get('block_access') ) {
+        $response->status = JAuthentication::STATUS_FAILURE;
+        $response->error_message = 'Membership is not valid.';
+        ob_end_clean();
+        header($redirectURLs['old_membership']);
+        exit;
+      }
     }
     //LCD end revised mechanism
   }//_checkMembership
@@ -365,30 +373,36 @@ class plgAuthenticationCiviCRM extends JPlugin
   
   function _getContactMembership($contactID) {
     // Find the membership records for the ContactID
-    require_once 'api/v2/Membership.php';
-    $membership = civicrm_contact_memberships_get($contactID);
-    return $membership;
+    require_once 'api/api.php';
+    $params = array(
+      'version' => 3,
+      'contact_id' => $contactID,
+    );
+    $membership = civicrm_api('membership', 'get', $params);
+
+    return $membership['values'];
   }
   
   function _generateToken($contactID) {
     require_once 'CRM/Contact/BAO/Contact/Utils.php';
     require_once 'CRM/Utils/Date.php';
-    $checksumValue = null;
-    $checksumValue = CRM_Contact_BAO_Contact_Utils::generateChecksum( $contactID, null, 1 );
+    $checksumValue = NULL;
+    $checksumValue = CRM_Contact_BAO_Contact_Utils::generateChecksum( $contactID, NULL, 1 );
     return $checksumValue;    
   }
   
-  function  _getMembershipStatuses( $membership_status_params ) {
-    require_once 'api/v2/Membership.php';
-    $membership_status_details = civicrm_membership_statuses_get( $membership_status_params );
-    return  $membership_status_details;
+  function  _getMembershipStatuses( $params ) {
+    require_once 'api/api.php';
+    $params['version'] = 3;
+    $statusDetails = civicrm_api('membership_status', 'get', $params);
+    return  $statusDetails['values'];
   }
   
   function _getReturnURL($itemid, $method){
     $link = '';
     if ($method == 0) {
       $db  = JFactory::getDbo();
-        $query  = $db->getQuery(true);
+        $query  = $db->getQuery(TRUE);
         $query->select('id, path');
         $query->from('#__menu');
         $query->where('id=' . $itemid);
@@ -397,7 +411,7 @@ class plgAuthenticationCiviCRM extends JPlugin
       $link = 'Location: '.JURI::base().'index.php/'.JRoute::_($menuItem->path);
     } else {
       //$redirect_item = $menu->getItem( $itemid );
-      //$link = 'Location: '.JRoute::_($redirect_item->link.'&Itemid='.$itemid, false);
+      //$link = 'Location: '.JRoute::_($redirect_item->link.'&Itemid='.$itemid, FALSE);
     }
     return $link;
   }
@@ -410,7 +424,7 @@ class plgAuthenticationCiviCRM extends JPlugin
     echo "GroupId = ".$groupId."<br>";
     $key = array_search($groupId, $R_user->groups);
     echo "key     = ".$key."<br>";
-    print("<pre>".print_r($R_user->groups,true)."</pre>");
+    //print("<pre>".print_r($R_user->groups, TRUE)."</pre>");
 
     //Remove the user from the group if necessary.
     if (array_key_exists($key, $R_user->groups)) {
@@ -433,6 +447,6 @@ class plgAuthenticationCiviCRM extends JPlugin
       $temp->groups = $R_user->groups;
     }
 
-    return true;
+    return TRUE;
   }//_removeUserFromGroup
 }
