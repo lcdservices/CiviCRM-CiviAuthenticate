@@ -237,20 +237,15 @@ class plgAuthenticationCiviCRM extends JPlugin
     // Else reject and send to old membership redirection page.
     $membership_status_old = 'true';
     $status_expired = 'false';
-    foreach ($membership1 as $a) {
-      $membership2 = $a;
+    foreach ($membership1 as $membership2) {
       $membership_status = $membership2[status_id];
       $membership_status_params = array( 'id' => $membership_status );
       $membership_status_details = $this->_getMembershipStatuses( $membership_status_params );
       $membership_status_iscurrent = $membership_status_details[$membership_status]['is_current_member'];
 
-      // print("<pre>".print_r($membership2,true)."</pre>");
-      // print("<pre>".print_r($membership_status_details,true)."</pre>");
-      // jexit();
-
+      //CRM_Core_Error::debug_var('membership2',$membership2);
 
       // If they are a a current member then proceed with login.
-      //
       // use status_id instead of _status_calc function as the latter does not account for manual overrides
       // or use status rule configured current flag (option found in plugin parameter)
       if ( ( $civicrm_use_current && $membership_status_iscurrent ) ||
@@ -261,8 +256,13 @@ class plgAuthenticationCiviCRM extends JPlugin
         $user = JFactory::getUser($result->id);
         $JUserID = $result->id;
 
+        //CRM_Core_Error::debug_var('$user',$user);
+        //CRM_Core_Error::debug_var('$JUserID',$JUserID);
+        //CRM_Core_Error::debug_var('$membership_status_iscurrent',$membership_status_iscurrent);
+
         // get the array of Joomla Usergroups that the user belongs to
         $current_groups = JUserHelper::getUserGroups($result->id);
+        //CRM_Core_Error::debug_var('$current_groups',$current_groups);
 
         // define $user_matches_group
         //  1 = the users group matches in both CiviCRM and Joomla = proceed with login
@@ -271,19 +271,21 @@ class plgAuthenticationCiviCRM extends JPlugin
         //      according to their membership status
         $user_matches_group = 0;
 
-        // Set the correct Joonla Access Level for the user
+        // Set the correct Joomla Access Level for the user
         //
         // Have tried checking first and then adding but had *issues*
         // which I believe are down to being an instance of the user object
-        if ($membership_status_iscurrent == true  && $Civicrm_use_advanced_membership_features == true){
-          $correct_group =  $this->params->get( 'TACL_user_group_'.$membership2[membership_type_id]);
-          // print("<pre>".print_r($membership2,true)."</pre>");
-          // print("<pre>".print_r($membership_status_details,true)."</pre>");
-          // print "<br>correct group = ".$correct_group;
-          // jexit();
 
-        } else {
+        //membership status
+        if ($membership_status_iscurrent == true  && $Civicrm_use_advanced_membership_features == true){
           $correct_group =  $this->params->get( 'user_group_'.$membership_status);
+          //CRM_Core_Error::debug_var('$correct_group1',$correct_group);
+        }
+        //membership type
+        else {
+          $correct_group =  $this->params->get( 'TACL_user_group_'.$membership2[membership_type_id]);
+          //CRM_Core_Error::debug_var('$correct_group2',$correct_group);
+
         }
 
         if (!JUserHelper::addUserToGroup($JUserID, $correct_group)){
