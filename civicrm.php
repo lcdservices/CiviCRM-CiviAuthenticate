@@ -18,7 +18,9 @@
  * version 1.0.5 by Brian Shaughnessy
  * version 1.1.0 by Brian Shaughnessy
  * version 2.0.0 by Henry Bennett (added Joomla ACL and username or email login)
- * version 2.1.0 by Brian Shaughnessy (CiviCRM 4.4/Joomla 2.5.18 compatibility)
+ * version 2.1.0 by Brian Shaughnessy
+ * version 2.5.0 by Brian Shaughnessy
+ * version 2.6.0 by Brian Shaughnessy (CiviCRM 4.4/Joomla 2.5.18 compatibility)
  * 
  * For updates, see: https://github.com/lcdservices/CiviCRM-CiviAuthenticate
  */
