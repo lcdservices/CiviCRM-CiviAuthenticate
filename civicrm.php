@@ -1,23 +1,26 @@
 <?php
 /**
- * Joomla CiviCRM Authentication plugin
+ * Joomla/CiviCRM Authentication plugin
  *
  * This plugin authenticates against the Joomla user table and
  * then checks with CiviCRM that the user has a valid current 
  * membership record
  *
- * @author   Henry Bennett <henry@bec-cave.org.uk>
- * @version  2.0.0
- * @package  Joomla
+ * @author      Henry Bennett <henry@bec-cave.org.uk>
+ *              Brian Shaughnessy <brian@lcdservices.biz>
+ * @version     2.1.0
+ * @package     Joomla
  * @subpackage  JFramework
- * @since   Joomla 1.6
- * @copyright  Copyleft 
+ * @since       Joomla 1.6
+ * @copyright   
  *
  * version 1.0.4 by Brian Shaughnessy
  * version 1.0.5 by Brian Shaughnessy
  * version 1.1.0 by Brian Shaughnessy
  * version 2.0.0 by Henry Bennett (added Joomla ACL and username or email login)
- * brian@lcdservices.biz // www.lcdservices.biz
+ * version 2.1.0 by Brian Shaughnessy (CiviCRM 4.4/Joomla 2.5.18 compatibility)
+ * 
+ * For updates, see: https://github.com/lcdservices/CiviCRM-CiviAuthenticate
  */
 
 // No direct access
@@ -29,8 +32,8 @@ jimport( 'joomla.event.plugin' );
  * Joomla/CiviCRM Authentication plugin
  *
  * @package    Joomla.Plugin
- * @subpackage  Authentication.joomla
- * @since 1.5
+ * @subpackage Authentication.joomla
+ * @since 1.6
  */
 class plgAuthenticationCiviCRM extends JPlugin
 {
@@ -72,29 +75,31 @@ class plgAuthenticationCiviCRM extends JPlugin
 
     //CiviCRM: accommodate username OR email
     if ( $this->params->get('username_email') ) {
-      $query->where('username='.$db->Quote($credentials['username']).' OR email='.$db->Quote($credentials['username']));
+      $query->where('username='.$db->quote($credentials['username']).' OR email='.$db->quote($credentials['username']));
     }
     else {
-      $query->where('username='.$db->Quote($credentials['username']));
+      $query->where('username='.$db->quote($credentials['username']));
     }
 
     $db->setQuery( $query );
     $result = $db->loadObject();
 
-		if ($result) {
-      $parts  = explode( ':', $result->password );
-      $crypt  = $parts[0];
-      $salt  = @$parts[1];
-      $testcrypt = JUserHelper::getCryptedPassword($credentials['password'], $salt);
+    if ($result)
+    {
+      $match = JUserHelper::verifyPassword($credentials['password'], $result->password, $result->id);
 
-      if ($crypt == $testcrypt) {
+      if ($match === true)
+      {
         $user = JUser::getInstance($result->id); // Bring this in line with the rest of the system
         $response->email = $user->email;
         $response->fullname = $user->name;
-        if (JFactory::getApplication()->isAdmin()) {
+
+        if (JFactory::getApplication()->isAdmin())
+        {
           $response->language = $user->getParam('admin_language');
         }
-        else {
+        else
+        {
           $response->language = $user->getParam('language');
         }
 
@@ -109,7 +114,9 @@ class plgAuthenticationCiviCRM extends JPlugin
         else {
           self::_checkMembership($redirectURLs, $user, $response, $result);
         }
-      } else {
+      }
+      else
+      {
         $response->status = JAuthentication::STATUS_FAILURE;
         $response->error_message = JText::_('JGLOBAL_AUTH_INVALID_PASS');
 
@@ -118,7 +125,9 @@ class plgAuthenticationCiviCRM extends JPlugin
         header($redirectURLs['bad_password']);
         exit;
       }
-    } else {
+    }
+    else
+    {
       $response->status = JAuthentication::STATUS_FAILURE;
       $response->error_message = JText::_('JGLOBAL_AUTH_NO_USER');
 
