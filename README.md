@@ -10,4 +10,5 @@ See also: http://wiki.civicrm.org/confluence/display/CRMDOC/Joomla+CiviCRM+Membe
 Version Notes
 -------------
 
-* v2.6.0 provides compatibility with Joomla 2.5.18. The Joomla authentication routine was modified in this revision (a new method for password hashing is now used). If you are using a version of Joomla prior to v2.5.18 you will need to use v2.5.x of the plugin. To access an earlier version, use the branch dropdown, switch to the tags tab, and select the desired version.
+* v3.0.0 :: updates for Joomla 3.x compatibility. Use v2.6.0 (see the tags) for Joomla 2.5.x compatibility.
+* v2.6.0 :: provides compatibility with Joomla 2.5.18. The Joomla authentication routine was modified in this revision (a new method for password hashing is now used). If you are using a version of Joomla prior to v2.5.18 you will need to use v2.5.x of the plugin. To access an earlier version, use the branch dropdown, switch to the tags tab, and select the desired version.
