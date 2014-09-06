@@ -145,7 +145,12 @@ class plgAuthenticationCiviCRM extends JPlugin
 		{
 			require_once JPATH_ADMINISTRATOR . '/components/com_users/helpers/users.php';
 
-			$methods = UsersHelper::getTwoFactorMethods();
+      //if J3.3 check for two factor
+      $jversion = new JVersion;
+      $joomlaVersion = $jversion->getShortVersion();
+      if (version_compare($joomlaVersion, '3.3') >= 0) {
+			  $methods = UsersHelper::getTwoFactorMethods();
+      }
 
 			if (count($methods) <= 1)
 			{
@@ -331,7 +336,7 @@ class plgAuthenticationCiviCRM extends JPlugin
     // First cyle thru the assignments for membership STATUS
     // By default we have enabled 8 levels of membership STATUS. If you have more
     // than 8 then you need to modify the section below.
-    if ( $this->params->get('advanced_features') ) {
+    if ( $this->params->get('advanced_features_status') ) {
       for ( $i = 1; $i <= 8; $i++ ) {
         $groups[] = $this->params->get( 'user_group_'.$i );
       }
@@ -340,7 +345,7 @@ class plgAuthenticationCiviCRM extends JPlugin
     // Then cycle thru the assignment for membership TYPE
     // By default we have enabled 8 levels of membership TYPE. If you have more
     // than 8 then you need to modify the section below.
-    if ( $this->params->get('advanced_membership_features') ) {
+    if ( $this->params->get('advanced_features_type') ) {
       for ( $i = 1; $i <= 8; $i++ ) {
         $groups[] = $this->params->get( 'TACL_user_group_'.$i );
       }
@@ -364,6 +369,7 @@ class plgAuthenticationCiviCRM extends JPlugin
 
     $membership = $this->_getContactMembership($contactID);
     //CRM_Core_Error::debug_var('redirectURLs', $redirectURLs);
+    //CRM_Core_Error::debug_var('$group_array', $group_array);
     //CRM_Core_Error::debug_var('membership', $membership);
 
     // Make sure there is a membership record.
@@ -445,7 +451,7 @@ class plgAuthenticationCiviCRM extends JPlugin
         foreach ( $current_groups as $key => $value ) {
           if ( in_array($value, $group_array, TRUE) ) {
             // group was found in array
-            // let's now check that the group we are asigned is the correct level
+            // let's now check that the group we are assigned is the correct level
             if ( $value !== $this->params->get( 'user_group_'.$membership_status ) ){
               // and remove it if it isn't the right level
               plgAuthenticationCiviCRM::_removeUserFromGroup($value, $JUserID);
@@ -492,6 +498,9 @@ class plgAuthenticationCiviCRM extends JPlugin
         $app =& JFactory::getApplication();
         $app->redirect($redirectURLs['old_membership']);
       }
+    }
+    else {
+      //CRM_Core_Error::debug_log_message('no membership on file');
     }
     //LCD end revised mechanism
   }//_checkMembership
@@ -560,10 +569,10 @@ class plgAuthenticationCiviCRM extends JPlugin
     // Get the user object.
     $R_user = & JUser::getInstance((int) $userId);
 
-    echo "UserId = ".$userId."<br>";
-    echo "GroupId = ".$groupId."<br>";
+    //echo "UserId = ".$userId."<br>";
+    //echo "GroupId = ".$groupId."<br>";
     $key = array_search($groupId, $R_user->groups);
-    echo "key = ".$key."<br>";
+    //echo "key = ".$key."<br>";
     //print("<pre>".print_r($R_user->groups, TRUE)."</pre>");
 
     //Remove the user from the group if necessary.

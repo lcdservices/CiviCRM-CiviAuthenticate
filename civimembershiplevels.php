@@ -63,12 +63,12 @@ class JFormFieldCiviMembershipLevels extends JFormField
 
 		// Get the field options.
 		$options = array();
-        	$options[] = JHTML::_('select.option', '0', JText::_('- Select Membership Level -') );
+    $options[] = JHTML::_('select.option', '0', JText::_('- Select Membership Level -') );
 		$query = 'SELECT id, name FROM civicrm_membership_status WHERE is_active = 1 ORDER BY id';
-        	$dao = CRM_Core_DAO::executeQuery( $query );
-        	while ( $dao->fetch( ) ) {
-            		$options[] = JHTML::_( 'select.option', $dao->id, $dao->name ); 
-        	}
+    $dao = CRM_Core_DAO::executeQuery( $query );
+    while ( $dao->fetch( ) ) {
+      $options[] = JHTML::_( 'select.option', $dao->id, $dao->name );
+    }
 	
 		// Create a read-only list (no name) with a hidden input to store the value.
 		if ((string) $this->element['readonly'] == 'true') {
