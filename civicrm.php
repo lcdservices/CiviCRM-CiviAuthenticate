@@ -73,7 +73,7 @@ class plgAuthenticationCiviCRM extends JPlugin
     $db = JFactory::getDbo();
 	  $query = $db->getQuery(true);
 
-    $query->select('id, password');
+    $query->select('id, username, password');
     $query->from('#__users');
 
     //CiviCRM: accommodate username OR email
@@ -89,6 +89,11 @@ class plgAuthenticationCiviCRM extends JPlugin
 
     if ($result)
     {
+      //CiviCRM: set credentials username as it may have been passed as the email
+      if ( $this->params->get('username_email') ) {
+        $credentials['username'] = $response->username = $result->username;
+      }
+
       $match = JUserHelper::verifyPassword($credentials['password'], $result->password, $result->id);
 
       if ($match === true)
