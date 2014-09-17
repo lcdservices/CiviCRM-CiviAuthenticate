@@ -389,6 +389,16 @@ class plgAuthenticationCiviCRM extends JPlugin
       }
       //if not blocking, proceed
       else {
+        //if no membership, remove any groups assigned via status
+        if ( $civicrm_useAdvancedStatus ) {
+          $current_groups = JUserHelper::getUserGroups($result->id);
+          foreach ( $current_groups as $key => $value ) {
+            if ( in_array($value, $group_array, TRUE) ) {
+              // group was found in array; remove
+              plgAuthenticationCiviCRM::_removeUserFromGroup($value, $result->id);
+            }
+          }
+        }
         $response->status = JAuthentication::STATUS_SUCCESS;
         $response->error_message = '';
       }
