@@ -7,8 +7,15 @@ In addition to creating membership-status-based access criteria, the user can co
 
 See also: http://wiki.civicrm.org/confluence/display/CRMDOC/Joomla+CiviCRM+Membership+Authentication+and+ACL+Plugin
 
-Version Notes
+Major Version Notes
 -------------
 
-* v3.0.0 :: updates for Joomla 3.x compatibility. Use v2.6.0 (see the tags) for Joomla 2.5.x compatibility.
-* v2.6.0 :: provides compatibility with Joomla 2.5.18. The Joomla authentication routine was modified in this revision (a new method for password hashing is now used). If you are using a version of Joomla prior to v2.5.18 you will need to use v2.5.x of the plugin. To access an earlier version, use the branch dropdown, switch to the tags tab, and select the desired version.
+* v3.0.x :: updates for Joomla 3.x compatibility. Also compatible with Joomla 2.5.18+.
+* v2.5.x :: use this version if you are using a version of Joomla prior to v2.5.18 (before Joomla implemented enhanced password hashing).
+
+Minor Version Notes
+-------------
+
+* v3.0.5 :: releases the lock on membership type levels in the advanced level option tab. Note that you may only select a membership level and apply the ACL group once (i.e. you may not apply multiple ACL groups to a single membership type).
+
+To access an earlier version, use the branch dropdown, switch to the tags tab, and select the desired version.
