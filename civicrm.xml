@@ -7,7 +7,7 @@
 	<license>http://www.gnu.org/licenses/gpl-2.0.html GNU/GPL</license>
 	<authorEmail>henry@nospam.bec-cave.org.uk, brian@lcdservices.biz</authorEmail>
 	<authorUrl>www.civicrm.org</authorUrl>
-	<version>3.0.3</version>
+	<version>3.0.4</version>
 	<description>PLG_CIVICRM_DESCRIPTION</description>
 	<scriptfile>install.php</scriptfile>
 	<files>

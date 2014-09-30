@@ -390,7 +390,7 @@ class plgAuthenticationCiviCRM extends JPlugin
       //if not blocking, proceed
       else {
         //if no membership, remove any groups assigned via status
-        if ( $civicrm_useAdvancedStatus ) {
+        if ( $civicrm_useAdvancedStatus || $civicrm_useAdvancedType ) {
           $current_groups = JUserHelper::getUserGroups($result->id);
           foreach ( $current_groups as $key => $value ) {
             if ( in_array($value, $group_array, TRUE) ) {
@@ -452,6 +452,7 @@ class plgAuthenticationCiviCRM extends JPlugin
           //CRM_Core_Error::debug_var('$correct_group2',$correct_group);
         }
 
+        //CRM_Core_Error::debug_var('correct_group', $correct_group);
         if ( $correct_group ) {
           if (!JUserHelper::addUserToGroup($JUserID, $correct_group)){
             return new JException(JText::_('Error Adding user to group'));

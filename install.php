@@ -27,7 +27,6 @@ class plgauthenticationcivicrmInstallerScript
 	{
 		// $parent is the class calling this method
 		echo '<p>' . JText::_('PLG_CIVICRM_UNINSTALL_TEXT') . '</p>';
-
     $filename = 'civimembershiplevels.php';
 	  $path = JPATH_SITE.'/administrator/components/com_civicrm/civicrm/joomla/site/elements';
 		echo '<p>Removing file from: '.$path.'/'.$filename.'</p>';
