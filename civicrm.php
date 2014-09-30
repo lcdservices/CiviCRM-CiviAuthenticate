@@ -338,21 +338,27 @@ class plgAuthenticationCiviCRM extends JPlugin
     // if a user belongs to another group then that will not be changed
     $groups = array();
 
-    // First cyle thru the assignments for membership STATUS
-    // By default we have enabled 8 levels of membership STATUS. If you have more
+    //when cycling through options, check for existence of type/status
+
+    // cycle through the assignments for membership STATUS
+    // by default we have enabled 8 levels of membership STATUS. If you have more
     // than 8 then you need to modify the section below.
     if ( $this->params->get('advanced_features_status') ) {
       for ( $i = 1; $i <= 8; $i++ ) {
-        $groups[] = $this->params->get( 'user_group_'.$i );
+        if ( $this->params->get( 'CiviMember_Level_'.$i ) ) {
+          $groups[] = $this->params->get('user_group_' . $i);
+        }
       }
     }
 
-    // Then cycle thru the assignment for membership TYPE
-    // By default we have enabled 8 levels of membership TYPE. If you have more
+    // cycle through the assignment for membership TYPE
+    // by default we have enabled 8 levels of membership TYPE. If you have more
     // than 8 then you need to modify the section below.
     if ( $this->params->get('advanced_features_type') ) {
       for ( $i = 1; $i <= 8; $i++ ) {
-        $groups[] = $this->params->get( 'TACL_user_group_'.$i );
+        if ( $this->params->get( 'CiviMember_TACL_Level_'.$i ) ) {
+          $groups[] = $this->params->get( 'TACL_user_group_'.$i );
+        }
       }
     }
 

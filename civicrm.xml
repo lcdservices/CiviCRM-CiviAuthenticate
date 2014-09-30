@@ -7,7 +7,7 @@
 	<license>http://www.gnu.org/licenses/gpl-2.0.html GNU/GPL</license>
 	<authorEmail>henry@nospam.bec-cave.org.uk, brian@lcdservices.biz</authorEmail>
 	<authorUrl>www.civicrm.org</authorUrl>
-	<version>3.0.4</version>
+	<version>3.0.5</version>
 	<description>PLG_CIVICRM_DESCRIPTION</description>
 	<scriptfile>install.php</scriptfile>
 	<files>
@@ -22,7 +22,11 @@
     <language tag="en-GB">en-GB/en-GB.plg_authentication_civicrm.sys.ini</language>
   </languages>
 	<config>
-		<fields name="params" addfieldpath="/administrator/components/com_civicrm/civicrm/joomla/site/elements">
+		<fields
+      name="params"
+      addfieldpath="/plugins/authentication/civicrm/fields"
+      addrulepath="/plugins/authentication/civicrm/rules"
+      >
 
 			<fieldset name="Login"
 				label="PLG_CIVICRM_FIELDSET_LOGIN">
@@ -266,10 +270,9 @@
 
 				<field name="spacerT1" type="spacer" hr="true" />
 				<field name="CiviMember_TACL_Level_1" type="civimembershiptypes"
-						readonly="true"
-						default="1" 
 						label="Membership Type 1" 
 						description="PLG_CIVICRM_FIELD_CIVICRM_TYPES_DESC"
+            validate="civimembershiptypes"
 				/>
 				<field name="TACL_user_group_1" type="usergroup"
 						default=""
@@ -281,10 +284,9 @@
 
 				<field name="spacerT2" type="spacer" hr="true" />
 				<field name="CiviMember_TACL_Level_2" type="civimembershiptypes"
-						readonly="true"
-						default="2" 
 						label="Membership Type 2" 
 						description="PLG_CIVICRM_FIELD_CIVICRM_TYPES_DESC"
+            validate="civimembershiptypes"
 				/>
 				<field name="TACL_user_group_2" type="usergroup"
 						default=""
@@ -296,10 +298,9 @@
 
 				<field name="spacerT3" type="spacer" hr="true" />
 				<field name="CiviMember_TACL_Level_3" type="civimembershiptypes"
-						readonly="true"
-						default="3" 
 						label="Membership Type 3" 
 						description="PLG_CIVICRM_FIELD_CIVICRM_TYPES_DESC"
+            validate="civimembershiptypes"
 				/>
 				<field name="TACL_user_group_3" type="usergroup"
 						default=""
@@ -311,10 +312,9 @@
 
 				<field name="spacerT4" type="spacer" hr="true" />
 			 	<field name="CiviMember_TACL_Level_4" type="civimembershiptypes"
-						readonly="true" 
-						default="4" 
 						label="Membership Type 4"
-					        description="PLG_CIVICRM_FIELD_CIVICRM_TYPES_DESC"	
+            description="PLG_CIVICRM_FIELD_CIVICRM_TYPES_DESC"
+            validate="civimembershiptypes"
 				/>
 				<field name="TACL_user_group_4" type="usergroup"
 						default=""
@@ -326,10 +326,9 @@
 
 				<field name="spacerT5" type="spacer" hr="true" />
 				<field name="CiviMember_TACL_Level_5" type="civimembershiptypes"
-						readonly="true"
-						default="5" 
 						label="Membership Type 5" 
 						description="PLG_CIVICRM_FIELD_CIVICRM_TYPES_DESC"
+            validate="civimembershiptypes"
 				/>
 				<field name="TACL_user_group_5" type="usergroup"
 						default=""
@@ -341,10 +340,9 @@
 
 				<field name="spacerT6" type="spacer" hr="true" />
 				<field name="CiviMember_TACL_Level_6" type="civimembershiptypes"
-						readonly="true"
-						default="6" 
 						label="Membership Type 6" 
 						description="PLG_CIVICRM_FIELD_CIVICRM_TYPES_DESC"
+            validate="civimembershiptypes"
 				/>
 				<field name="TACL_user_group_6" type="usergroup"
 						default=""
@@ -356,10 +354,9 @@
 
 				<field name="spacerT7" type="spacer" hr="true" />
 				<field name="CiviMember_TACL_Level_7" type="civimembershiptypes"
-						readonly="true"
-						default="7" 
 						label="Membership Type 7" 
 						description="PLG_CIVICRM_FIELD_CIVICRM_TYPES_DESC"
+            validate="civimembershiptypes"
 				/>
 				<field name="TACL_user_group_7" type="usergroup"
 						default=""
@@ -371,10 +368,9 @@
 				
 				<field name="spacerT8" type="spacer" hr="true" />
 				<field name="CiviMember_TACL_Level_8" type="civimembershiptypes"
-						readonly="true"
-						default="8" 
 						label="Membership Type 8"
 				    description="PLG_CIVICRM_FIELD_CIVICRM_TYPES_DESC"
+            validate="civimembershiptypes"
 				/>
 				<field name="TACL_user_group_8" type="usergroup"
 						default=""
