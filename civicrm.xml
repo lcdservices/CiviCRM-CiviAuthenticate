@@ -13,8 +13,9 @@
 	<files>
 		<filename plugin="civicrm">civicrm.php</filename>
 		<filename>index.html</filename>
-		<filename>civimembershiplevels.php</filename>
-		<filename>civimembershiptypes.php</filename>
+		<filename>install.php</filename>
+		<folder>fields</folder>
+		<folder>rules</folder>
 		<folder>language</folder>
 	</files>
   <languages folder="language">

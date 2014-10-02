@@ -131,7 +131,7 @@ class plgAuthenticationCiviCRM extends JPlugin
         $response->error_message = JText::_('JGLOBAL_AUTH_INVALID_PASS');
 
         //CiviCRM: redirection
-        $app =& JFactory::getApplication();
+        $app = JFactory::getApplication();
         $app->redirect($redirectURLs['bad_password']);
       }
     }
@@ -141,7 +141,7 @@ class plgAuthenticationCiviCRM extends JPlugin
       $response->error_message = JText::_('JGLOBAL_AUTH_NO_USER');
 
       //CiviCRM: no username found
-      $app =& JFactory::getApplication();
+      $app = JFactory::getApplication();
       $app->redirect($redirectURLs['no_match']);
     }
 
@@ -390,7 +390,7 @@ class plgAuthenticationCiviCRM extends JPlugin
         $response->status = JAuthentication::STATUS_FAILURE;
         $response->error_message = 'No current membership records for this contact.';
 
-        $app =& JFactory::getApplication();
+        $app = JFactory::getApplication();
         $app->redirect($redirectURLs['old_membership']);
       }
       //if not blocking, proceed
