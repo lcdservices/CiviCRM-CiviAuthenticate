@@ -132,6 +132,7 @@ class plgAuthenticationCiviCRM extends JPlugin
 
         //CiviCRM: redirection
         $app = JFactory::getApplication();
+        $app->enqueueMessage($response->error_message, 'error');
         $app->redirect($redirectURLs['bad_password']);
       }
     }
@@ -142,6 +143,7 @@ class plgAuthenticationCiviCRM extends JPlugin
 
       //CiviCRM: no username found
       $app = JFactory::getApplication();
+      $app->enqueueMessage($response->error_message, 'error');
       $app->redirect($redirectURLs['no_match']);
     }
 
