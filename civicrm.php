@@ -21,6 +21,8 @@
  * version 2.1.0 by Brian Shaughnessy
  * version 2.5.0 by Brian Shaughnessy
  * version 2.6.0 by Brian Shaughnessy (CiviCRM 4.4/Joomla 2.5.18 compatibility)
+ *
+ * see current notes in the README.md file
  * 
  * For updates, see: https://github.com/lcdservices/CiviCRM-CiviAuthenticate
  */
@@ -417,6 +419,10 @@ class plgAuthenticationCiviCRM extends JPlugin
     // Else reject and send to old membership redirection page.
     $membership_status_old = TRUE;
     $status_expired = FALSE;
+
+    //track the mem status weight as we cycle; only apply the status rule for the earliest weight status type
+    $memStatusWeight = NULL;
+
     foreach ($membership as $mem) {
       $membership_status = $mem['status_id'];
       $membership_status_params = array( 'id' => $membership_status );
@@ -424,6 +430,7 @@ class plgAuthenticationCiviCRM extends JPlugin
       $membership_status_iscurrent = $membership_status_details[$membership_status]['is_current_member'];
 
       //CRM_Core_Error::debug_var('mem',$mem);
+      //CRM_Core_Error::debug_var('$membership_status_details',$membership_status_details);
 
       // If they are are a current member then proceed with login.
       // use status_id instead of _status_calc function as the latter does not account for manual overrides
@@ -451,8 +458,14 @@ class plgAuthenticationCiviCRM extends JPlugin
 
         //membership status
         if ( $civicrm_useAdvancedStatus ){
+          if (!$memStatusWeight ||
+            $membership_status_details[$membership_status]['weight'] < $memStatusWeight
+          ) {
           $correct_group = $this->params->get( 'user_group_'.$membership_status);
           //CRM_Core_Error::debug_var('$correct_group1',$correct_group);
+          }
+          $memStatusWeight = $membership_status_details[$membership_status]['weight'];
+          //CRM_Core_Error::debug_var('$memStatusWeight', $memStatusWeight);
         }
         //membership type
         elseif ( $civicrm_useAdvancedType ) {

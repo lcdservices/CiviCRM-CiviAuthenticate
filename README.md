@@ -16,6 +16,7 @@ Major Version Notes
 Minor Version Notes
 -------------
 
+* v3.0.7 :: when cycling through memberships to apply status rules, only apply a rule for the lowest weight status. This addresses the situation where a person has an active membership and an expired membership, and the expired membership is inadvertently applied last (thus assigning a lower group than desired).
 * v3.0.5 :: releases the lock on membership type levels in the advanced level option tab. Note that you may only select a membership level and apply the ACL group once (i.e. you may not apply multiple ACL groups to a single membership type).
 
 To access an earlier version, use the branch dropdown, switch to the tags tab, and select the desired version.
