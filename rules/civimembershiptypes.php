@@ -3,6 +3,7 @@
  * @version        $Id: mobile.php 20196 2011-01-09 02:40:25Z ian $
  * @package        Joomla.Framework
  * @subpackage     Form
+ * @license		GNU General Public License version 2 or later; see LICENSE.txt
  */
 
 defined('JPATH_BASE') or die;

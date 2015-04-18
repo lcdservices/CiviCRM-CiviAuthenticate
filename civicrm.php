@@ -12,7 +12,8 @@
  * @package     Joomla
  * @subpackage  JFramework
  * @since       Joomla 1.6
- * @copyright   
+ * @copyright
+ * @license		GNU General Public License version 2 or later; see LICENSE.txt
  *
  * version 1.0.4 by Brian Shaughnessy
  * version 1.0.5 by Brian Shaughnessy
