@@ -7,7 +7,7 @@
 	<license>http://www.gnu.org/licenses/gpl-2.0.html GNU/GPL</license>
 	<authorEmail>henry@nospam.bec-cave.org.uk, brian@lcdservices.biz</authorEmail>
 	<authorUrl>www.civicrm.org</authorUrl>
-	<version>3.1</version>
+	<version>3.2</version>
 	<description>PLG_CIVICRM_DESCRIPTION</description>
 	<scriptfile>install.php</scriptfile>
 	<files>
@@ -83,40 +83,52 @@
 					size=""
 				/>
 				<field name="redirect_no_match" type="menuitem"
-					default="" 
-					state="1" 
-					label="PLG_CIVICRM_FIELD_REDIRECT_NO_MATCH_LABEL" 
-					description="PLG_CIVICRM_FIELD_REDIRECT_NO_MATCH_DESC"
-					size=""
+					     default=""
+					     state="1"
+					     label="PLG_CIVICRM_FIELD_REDIRECT_NO_MATCH_LABEL"
+					     description="PLG_CIVICRM_FIELD_REDIRECT_NO_MATCH_DESC"
+               size=""
 				/>
-				<field name="login_spacer_2" type="spacer" hr="true"/>
-				<field name="login_spacer_desc_2" type="spacer" label="PLG_CIVICRM_FIELD_LOGIB_SPACER_DESC_2"/>
+				<field name="login_spacer_2"
+               type="spacer"
+               hr="true"
+        />
+				<field name="login_spacer_desc_2"
+               type="spacer"
+               label="PLG_CIVICRM_FIELD_LOGIB_SPACER_DESC_2"
+        />
 
 				<field name="expired_method" type="radio" 
-					default="1" 
-					label="PLG_CIVICRM_FIELD_EXPIRED_METHOD_LABEL"
-					description="PLG_CIVICRM_FIELD_EXPIRED_METHOD_DESC"
+					     default="1"
+					     label="PLG_CIVICRM_FIELD_EXPIRED_METHOD_LABEL"
+					     description="PLG_CIVICRM_FIELD_EXPIRED_METHOD_DESC"
 				>
 				    <option value="1">Menu Item</option>
 				    <option value="0">Contribution Page</option>
 				</field>
 
-				<field name="redirect_expired_menu" type="menuitem" 
-					state="1" 
-					default="" 
-					label="PLG_CIVICRM_FIELD_REDIRECT_EXPIRED_MENU_LABEL" 
-					description="PLG_CIVICRM_FIELD_REDIRECT_EXPIRED_MENU_DESC" 
+				<field name="redirect_expired_menu"
+               type="menuitem"
+               state="1"
+               default=""
+					     label="PLG_CIVICRM_FIELD_REDIRECT_EXPIRED_MENU_LABEL"
+					     description="PLG_CIVICRM_FIELD_REDIRECT_EXPIRED_MENU_DESC"
 				/>
 			
-				<field name="redirect_expired_contribpage" type="civicontribpages" 
-					default="" 
-					label="PLG_CIVICRM_FIELD_REDIRECT_EXPIRED_CONTRIB_LABEL" 
-					description="PLG_CIVICRM_FIELD_REDIRECT_EXPIRED_CONTRIB_DESC" 
-					/>
+				<field name="redirect_expired_contribpage"
+               type="sql"
+               query="SELECT id, title FROM civicrm_contribution_page WHERE is_active = 1 ORDER BY title"
+               key_field="id"
+               value_field="title"
+					     default=""
+					     label="PLG_CIVICRM_FIELD_REDIRECT_EXPIRED_CONTRIB_LABEL"
+					     description="PLG_CIVICRM_FIELD_REDIRECT_EXPIRED_CONTRIB_DESC"
+				/>
 			</fieldset>
 
 			<fieldset name="mem_status_acces_control"
-				label="PLG_CIVICRM_FIELDSET_ACCESS">
+				        label="PLG_CIVICRM_FIELDSET_ACCESS"
+      >
 
 				<field name="advanced_features_status" type="radio"
 					default="0"
