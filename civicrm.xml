@@ -7,7 +7,7 @@
 	<license>http://www.gnu.org/licenses/gpl-2.0.html GNU/GPL</license>
 	<authorEmail>henry@nospam.bec-cave.org.uk, brian@lcdservices.biz</authorEmail>
 	<authorUrl>www.civicrm.org</authorUrl>
-	<version>3.2.1</version>
+	<version>3.3</version>
 	<description>PLG_CIVICRM_DESCRIPTION</description>
 	<scriptfile>install.php</scriptfile>
 	<files>
@@ -22,6 +22,9 @@
     <language tag="en-GB">en-GB/en-GB.plg_authentication_civicrm.ini</language>
     <language tag="en-GB">en-GB/en-GB.plg_authentication_civicrm.sys.ini</language>
   </languages>
+  <updateservers>
+    <server type="extension" priority="1" name="CiviAuthenticate Update Site">http://www.lcdservices.biz/lcd/extensionupdates/plg_civiauthenticate.xml</server>
+  </updateservers>
 	<config>
 		<fields
       name="params"
