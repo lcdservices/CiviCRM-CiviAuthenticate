@@ -30,7 +30,6 @@
             name="params"
             addfieldpath="/plugins/authentication/civicrm/fields"
             addrulepath="/plugins/authentication/civicrm/rules"
-
         >
 
             <fieldset name="Login"
