@@ -119,10 +119,7 @@
 				/>
 			
 				<field name="redirect_expired_contribpage"
-               type="sql"
-               query="SELECT id, title FROM civicrm_contribution_page WHERE is_active = 1 ORDER BY title"
-               key_field="id"
-               value_field="title"
+               type="civicontributionpages"
 					     default=""
 					     label="PLG_CIVICRM_FIELD_REDIRECT_EXPIRED_CONTRIB_LABEL"
 					     description="PLG_CIVICRM_FIELD_REDIRECT_EXPIRED_CONTRIB_DESC"
