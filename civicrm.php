@@ -348,10 +348,10 @@ class plgAuthenticationCiviCRM extends JPlugin
     // cycle through the assignments for membership STATUS
     // by default we have enabled 8 levels of membership STATUS. If you have more
     // than 8 then you need to modify the section below.
-    if ( $this->params->get('advanced_features_status') ) {
-      for ( $i = 1; $i <= 8; $i++ ) {
-        if ( $this->params->get( 'CiviMember_Level_'.$i ) ) {
-          $groups[] = $this->params->get('user_group_' . $i);
+    if ($this->params->get('advanced_features_status')) {
+      for ($i = 1; $i <= 8; $i++) {
+        if ($this->params->get( 'CiviMember_Level_'.$i)) {
+          $groups[$this->params->get( 'CiviMember_Level_'.$i)] = $this->params->get('user_group_' . $i);
         }
       }
     }
@@ -359,14 +359,15 @@ class plgAuthenticationCiviCRM extends JPlugin
     // cycle through the assignment for membership TYPE
     // by default we have enabled 8 levels of membership TYPE. If you have more
     // than 8 then you need to modify the section below.
-    if ( $this->params->get('advanced_features_type') ) {
-      for ( $i = 1; $i <= 8; $i++ ) {
-        if ( $this->params->get( 'CiviMember_TACL_Level_'.$i ) ) {
-          $groups[] = $this->params->get( 'TACL_user_group_'.$i );
+    if ($this->params->get('advanced_features_type')) {
+      for ($i = 1; $i <= 8; $i++) {
+        if ($this->params->get('CiviMember_TACL_Level_'.$i)) {
+          $groups[$this->params->get('CiviMember_TACL_Level_'.$i)] = $this->params->get('TACL_user_group_'.$i);
         }
       }
     }
 
+    //jdbg::p($groups);
     return array_unique($groups);
   }
 
@@ -401,10 +402,10 @@ class plgAuthenticationCiviCRM extends JPlugin
       //if not blocking, proceed
       else {
         //if no membership, remove any groups assigned via status
-        if ( $civicrm_useAdvancedStatus || $civicrm_useAdvancedType ) {
+        if ($civicrm_useAdvancedStatus || $civicrm_useAdvancedType) {
           $current_groups = JUserHelper::getUserGroups($result->id);
-          foreach ( $current_groups as $key => $value ) {
-            if ( in_array($value, $group_array, TRUE) ) {
+          foreach ($current_groups as $key => $value) {
+            if (in_array($value, $group_array, TRUE)) {
               // group was found in array; remove
               plgAuthenticationCiviCRM::_removeUserFromGroup($value, $result->id);
             }
@@ -469,8 +470,8 @@ class plgAuthenticationCiviCRM extends JPlugin
           //CRM_Core_Error::debug_var('$memStatusWeight', $memStatusWeight);
         }
         //membership type
-        elseif ( $civicrm_useAdvancedType ) {
-          $correct_group = $this->params->get( 'TACL_user_group_'.$mem[membership_type_id]);
+        elseif ($civicrm_useAdvancedType) {
+          $correct_group = $group_array[$mem['membership_type_id']];
           //CRM_Core_Error::debug_var('$correct_group2',$correct_group);
         }
 
