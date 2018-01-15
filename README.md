@@ -10,6 +10,7 @@ See also: http://wiki.civicrm.org/confluence/display/CRMDOC/Joomla+CiviCRM+Membe
 Major Version Notes
 -------------
 
+* v3.4.x :: bug fixes: in membership type mapping, support selecting memberships in any order; fix condition structure when determine what groups to remove
 * v3.3.x :: implement extension update path
 * v3.2.x :: fixes contrib page parameter selection
 * v3.0.x :: updates for Joomla 3.x compatibility. Also compatible with Joomla 2.5.18+.
