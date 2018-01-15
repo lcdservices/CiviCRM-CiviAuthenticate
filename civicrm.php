@@ -459,7 +459,7 @@ class plgAuthenticationCiviCRM extends JPlugin
         //CRM_Core_Error::debug_var('$current_groups',$current_groups);
 
         //membership status
-        if ( $civicrm_useAdvancedStatus ){
+        if ($civicrm_useAdvancedStatus){
           if (!$memStatusWeight ||
             $membership_status_details[$membership_status]['weight'] < $memStatusWeight
           ) {
@@ -476,7 +476,7 @@ class plgAuthenticationCiviCRM extends JPlugin
         }
 
         //CRM_Core_Error::debug_var('correct_group', $correct_group);
-        if ( $correct_group ) {
+        if ($correct_group) {
           if (!JUserHelper::addUserToGroup($JUserID, $correct_group)){
             return new JException(JText::_('Error Adding user to group'));
           }
@@ -487,18 +487,23 @@ class plgAuthenticationCiviCRM extends JPlugin
         // that we have specified in the plugin Advanced Options that we've already
         // placed in $groups_array.
         // this method ignores any other group that a user may belong to (eg Administrators, Super User)
-        foreach ( $current_groups as $key => $value ) {
-          if ( in_array($value, $group_array, TRUE) ) {
-            // group was found in array
-            // let's now check that the group we are assigned is the correct level
-            if ( $value !== $this->params->get( 'user_group_'.$membership_status ) ){
+        foreach ($current_groups as $key => $value) {
+          if (in_array($value, $group_array, TRUE)) {
+            // group was found in array; let's now check that the group we are assigned is the correct level
+            // check based on both status and type option
+            if (
+              ($civicrm_useAdvancedStatus &&
+               $value !== $this->params->get('user_group_'.$membership_status)) ||
+              ($civicrm_useAdvancedType &&
+               $value != $correct_group)
+            ){
               // and remove it if it isn't the right level
               plgAuthenticationCiviCRM::_removeUserFromGroup($value, $JUserID);
             }
           }
         }
       }
-      elseif ( $membership_status_details[$membership_status]['is_current_member'] == FALSE ) {
+      elseif ($membership_status_details[$membership_status]['is_current_member'] == FALSE) {
         $status_expired = TRUE;
       }
     }
