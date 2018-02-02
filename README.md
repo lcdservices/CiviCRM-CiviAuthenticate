@@ -10,6 +10,7 @@ See also: http://wiki.civicrm.org/confluence/display/CRMDOC/Joomla+CiviCRM+Membe
 Major Version Notes
 -------------
 
+* v4.0.x :: significant restructuring to status/type handling. we now consider both sets of options separately, and outside of the master status check. this allows users to assign based on status and type at the same time. care should be taken to avoid logical conflicts (i.e. where assignments based on type and status would conflict). because this introduces some changes in behavior, please test thoroughly when implementing.
 * v3.5.x :: support multiple mappings per user
 * v3.4.x :: bug fixes: in membership type mapping, support selecting memberships in any order; fix condition structure when determine what groups to remove
 * v3.3.x :: implement extension update path
