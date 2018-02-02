@@ -337,11 +337,20 @@ class plgAuthenticationCiviCRM extends JPlugin
     return $redirectURLs;
   }//_getRedirectionURLs
 
+  /**
+   * @return array
+   *
+   * get a list of user groups to work with, organized by status/type config set
+   * we will use these to check against and set the users main group level
+   * if a user belongs to another group then that will not be changed
+   */
   function _buildGroups() {
-    // Get a list of User Groups to work with
-    // we will use these to check against and set the users main group level
-    // if a user belongs to another group then that will not be changed
-    $groups = array();
+    //CRM_Core_Error::debug_var('$this->params', $this->params);
+
+    $groups = array(
+      'status' => array(),
+      'type' => array(),
+    );
 
     //when cycling through options, check for existence of type/status
 
@@ -351,7 +360,7 @@ class plgAuthenticationCiviCRM extends JPlugin
     if ($this->params->get('advanced_features_status')) {
       for ($i = 1; $i <= 8; $i++) {
         if ($this->params->get('CiviMember_Level_'.$i)) {
-          $groups[$this->params->get('CiviMember_Level_'.$i)] = $this->params->get('user_group_' . $i);
+          $groups['status'][$this->params->get('CiviMember_Level_'.$i)] = $this->params->get('user_group_' . $i);
         }
       }
     }
@@ -362,18 +371,24 @@ class plgAuthenticationCiviCRM extends JPlugin
     if ($this->params->get('advanced_features_type')) {
       for ($i = 1; $i <= 8; $i++) {
         if ($this->params->get('CiviMember_TACL_Level_'.$i)) {
-          $groups[$this->params->get('CiviMember_TACL_Level_'.$i)] = $this->params->get('TACL_user_group_'.$i);
+          $groups['type'][$this->params->get('CiviMember_TACL_Level_'.$i)] = $this->params->get('TACL_user_group_'.$i);
         }
       }
     }
 
+    //remove duplicates
+    //$groups['status'] = array_unique($groups['status']);
+    //$groups['type'] = array_unique($groups['type']);
+
     //jdbg::p($groups);
-    return array_unique($groups);
+    return $groups;
   }
 
   function _checkMembership($redirectURLs, $user, $response, $result) {
+    $this->_initializeCiviCRM();
+
     //CiviCRM: build groups array
-    $configuredGroups = self::_buildGroups();
+    $configuredGroups = $this->_buildGroups();
     //CRM_Core_Error::debug_var('$configuredGroups', $configuredGroups);
 
     //CiviCRM: retrieve parameter values
@@ -384,6 +399,7 @@ class plgAuthenticationCiviCRM extends JPlugin
 
     $contactID = $this->_getCiviContact($user);
     $contactID = $contactID+0; //ensure integer type conversion
+    $JUserID = $result->id;
 
     $membership = $this->_getContactMembership($contactID);
     //CRM_Core_Error::debug_var('membership', $membership);
@@ -403,11 +419,13 @@ class plgAuthenticationCiviCRM extends JPlugin
       }
       //if not blocking, proceed
       else {
-        //if no membership, remove any groups assigned via status
+        //if no membership, remove any groups assigned via status/type
         if ($civicrm_useAdvancedStatus || $civicrm_useAdvancedType) {
           foreach ($userACLGroups as $key => $value) {
-            if (in_array($value, $configuredGroups, TRUE)) {
-              // group was found in array; remove
+            if (in_array($value, $configuredGroups['status'], TRUE) ||
+              in_array($value, $configuredGroups['type'], TRUE)
+            ) {
+              // group was found; remove
               plgAuthenticationCiviCRM::_removeUserFromGroup($value, $result->id);
             }
           }
@@ -445,29 +463,32 @@ class plgAuthenticationCiviCRM extends JPlugin
         $response->status = JAuthentication::STATUS_SUCCESS;
         $response->error_message = '';
         $membership_status_old = FALSE;
-        $JUserID = $result->id;
 
         //CRM_Core_Error::debug_var('$JUserID',$JUserID);
         //CRM_Core_Error::debug_var('$membership_status_iscurrent',$membership_status_iscurrent);
-
-        //membership status
-        if ($civicrm_useAdvancedStatus){
-          if (!$memStatusWeight ||
-            $membership_status_details[$membership_status]['weight'] < $memStatusWeight
-          ) {
-            $assignedGroups[] = $this->params->get('user_group_'.$membership_status);
-          }
-          $memStatusWeight = $membership_status_details[$membership_status]['weight'];
-          //CRM_Core_Error::debug_var('$memStatusWeight', $memStatusWeight);
-        }
-        //membership type
-        elseif ($civicrm_useAdvancedType) {
-          $assignedGroups[] = $configuredGroups[$mem['membership_type_id']];
-        }
       }
       elseif ($membership_status_details[$membership_status]['is_current_member'] == FALSE) {
         $status_expired = TRUE;
       }
+
+      //assign groups based on status/type
+
+      //membership status
+      if ($civicrm_useAdvancedStatus){
+        if (!$memStatusWeight ||
+          $membership_status_details[$membership_status]['weight'] < $memStatusWeight
+        ) {
+          $assignedGroups[] = $this->params->get('user_group_'.$membership_status);
+        }
+        $memStatusWeight = $membership_status_details[$membership_status]['weight'];
+        //CRM_Core_Error::debug_var('$memStatusWeight', $memStatusWeight);
+      }
+
+      //membership type
+      if ($civicrm_useAdvancedType) {
+        $assignedGroups[] = $configuredGroups['type'][$mem['membership_type_id']];
+      }
+      //CRM_Core_Error::debug_var('$memStatusWeight', $memStatusWeight);
     }
 
     //cycle through and assign groups
@@ -489,19 +510,20 @@ class plgAuthenticationCiviCRM extends JPlugin
     // placed in $groups_array.
     // this method ignores any other group that a user may belong to (eg Administrators, Super User)
     foreach ($userACLGroups as $value) {
-      if (in_array($value, $configuredGroups, TRUE)) {
+      if (in_array($value, $configuredGroups['status'], TRUE) ||
+        in_array($value, $configuredGroups['type'], TRUE)
+      ) {
         // group was found in array; let's now check that the group we are assigned is the correct level
         // check based on both status and type option; remove if not;
         if (!in_array($value, $assignedGroups)){
-          plgAuthenticationCiviCRM::_removeUserFromGroup($value, $JUserID);
+          $this->_removeUserFromGroup($value, $JUserID);
         }
       }
     }
 
-    //process based on status IF a membership record exists
-    //if we have chosen not to block access, we need to skip this when the user has no mem records at all
-    if (!empty($membership)) {
-      //we now know if the membership is current, expired, or other
+    //process based on status IF a membership record exists and we are blocking access
+    if (!empty($membership) && $this->params->get('block_access')) {
+      //expired and blocking
       if ($membership_status_old && $status_expired) { //expired
 
         //need to decide if we're redirecting to a menu or contrib page
@@ -525,7 +547,7 @@ class plgAuthenticationCiviCRM extends JPlugin
         $app->redirect($expired_redirect);
       }
       //not current, not expired, and we are blocking access
-      elseif ($membership_status_old && $this->params->get('block_access')) {
+      elseif ($membership_status_old) {
         $response->status = JAuthentication::STATUS_FAILURE;
         $response->error_message = 'Membership is not valid.';
 
@@ -541,10 +563,7 @@ class plgAuthenticationCiviCRM extends JPlugin
   function _getCiviContact($user) {
     // We have now authenticated against the Joomla user table. From here we 
     // need to find the CiviCRM user ID by using UFMatch
-    // Initiate CiviCRM
-    require_once JPATH_ROOT.'/'.'administrator/components/com_civicrm/civicrm.settings.php';
-    require_once 'CRM/Core/Config.php';
-    $civiConfig =& CRM_Core_Config::singleton();
+    $this->_initializeCiviCRM();
 
     // Find the CiviCRM ContactID
     require_once 'CRM/Core/BAO/UFMatch.php';
@@ -633,4 +652,17 @@ class plgAuthenticationCiviCRM extends JPlugin
 
     return TRUE;
   }//_removeUserFromGroup
+
+  /**
+   * @return mixed
+   *
+   * initialize CiviCRM and return config object
+   */
+  function _initializeCiviCRM() {
+    require_once JPATH_ROOT.'/administrator/components/com_civicrm/civicrm.settings.php';
+    require_once 'CRM/Core/Config.php';
+    $config = CRM_Core_Config::singleton();
+
+    return $config;
+  }
 }
