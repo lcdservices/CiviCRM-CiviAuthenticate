@@ -21,6 +21,7 @@ Major Version Notes
 Minor Version Notes
 -------------
 
+* v4.0.2 :: ensure we allow access if blocking disabled
 * v3.2.1 :: fix pass by reference error affecting session headers.
 * v3.0.7 :: when cycling through memberships to apply status rules, only apply a rule for the lowest weight status. This addresses the situation where a person has an active membership and an expired membership, and the expired membership is inadvertently applied last (thus assigning a lower group than desired).
 * v3.0.5 :: releases the lock on membership type levels in the advanced level option tab. Note that you may only select a membership level and apply the ACL group once (i.e. you may not apply multiple ACL groups to a single membership type).
