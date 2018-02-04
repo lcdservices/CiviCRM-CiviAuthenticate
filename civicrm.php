@@ -555,8 +555,10 @@ class plgAuthenticationCiviCRM extends JPlugin
         $app->redirect($redirectURLs['old_membership']);
       }
     }
-    else {
-      //CRM_Core_Error::debug_log_message('no membership on file');
+
+    //if we are not blocking, always set status success
+    if (!$this->params->get('block_access')) {
+      $response->status = JAuthentication::STATUS_SUCCESS;
     }
   }//_checkMembership
 
