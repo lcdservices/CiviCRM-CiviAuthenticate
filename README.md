@@ -10,6 +10,7 @@ See also: http://wiki.civicrm.org/confluence/display/CRMDOC/Joomla+CiviCRM+Membe
 Major Version Notes
 -------------
 
+* v4.1.x :: added option on Membership Type ACL feature to limit to current members. When enabled, the type-based rules are only applied if the user is a current member. When disabled, the rule are applied regardless of status.
 * v4.0.x :: significant restructuring to status/type handling. we now consider both sets of options separately, and outside of the master status check. this allows users to assign based on status and type at the same time. care should be taken to avoid logical conflicts (i.e. where assignments based on type and status would conflict). because this introduces some changes in behavior, please test thoroughly when implementing.
 * v3.5.x :: support multiple mappings per user
 * v3.4.x :: bug fixes: in membership type mapping, support selecting memberships in any order; fix condition structure when determine what groups to remove

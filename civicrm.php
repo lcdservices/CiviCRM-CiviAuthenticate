@@ -438,7 +438,7 @@ class plgAuthenticationCiviCRM extends JPlugin
     // Cycle through membership records. If a current record is found, authenticate.
     // Else reject and send to 'old membership' redirection page.
     $membership_status_old = TRUE;
-    $status_expired = FALSE;
+    $statusCurrent = FALSE;
 
     //track the mem status weight as we cycle; only apply the status rule for the earliest weight status type
     $memStatusWeight = NULL;
@@ -463,12 +463,10 @@ class plgAuthenticationCiviCRM extends JPlugin
         $response->status = JAuthentication::STATUS_SUCCESS;
         $response->error_message = '';
         $membership_status_old = FALSE;
+        $statusCurrent = TRUE;
 
         //CRM_Core_Error::debug_var('$JUserID',$JUserID);
         //CRM_Core_Error::debug_var('$membership_status_iscurrent',$membership_status_iscurrent);
-      }
-      elseif ($membership_status_details[$membership_status]['is_current_member'] == FALSE) {
-        $status_expired = TRUE;
       }
 
       //assign groups based on status/type
@@ -486,7 +484,12 @@ class plgAuthenticationCiviCRM extends JPlugin
 
       //membership type
       if ($civicrm_useAdvancedType) {
-        $assignedGroups[] = $configuredGroups['type'][$mem['membership_type_id']];
+        //if limiting to current, check status
+        if (!$this->params->get('typeacl_limittocurrent') ||
+          ($this->params->get('typeacl_limittocurrent') && $statusCurrent)
+        ) {
+          $assignedGroups[] = $configuredGroups['type'][$mem['membership_type_id']];
+        }
       }
       //CRM_Core_Error::debug_var('$memStatusWeight', $memStatusWeight);
     }
@@ -524,7 +527,7 @@ class plgAuthenticationCiviCRM extends JPlugin
     //process based on status IF a membership record exists and we are blocking access
     if (!empty($membership) && $this->params->get('block_access')) {
       //expired and blocking
-      if ($membership_status_old && $status_expired) { //expired
+      if ($membership_status_old && !$statusCurrent) { //expired
 
         //need to decide if we're redirecting to a menu or contrib page
         if ($redirectURLs['expired_method'] == 1) { //menu
