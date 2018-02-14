@@ -406,6 +406,7 @@ class plgAuthenticationCiviCRM extends JPlugin
 
     //current ACL groups for user
     $userACLGroups = JUserHelper::getUserGroups($result->id);
+    //CRM_Core_Error::debug_var('$userACLGroups', $userACLGroups);
 
     // Make sure there is a membership record.
     if (empty($membership)){
@@ -422,8 +423,9 @@ class plgAuthenticationCiviCRM extends JPlugin
         //if no membership, remove any groups assigned via status/type
         if ($civicrm_useAdvancedStatus || $civicrm_useAdvancedType) {
           foreach ($userACLGroups as $key => $value) {
-            if (in_array($value, $configuredGroups['status'], TRUE) ||
-              in_array($value, $configuredGroups['type'], TRUE)
+            if (
+              ($civicrm_useAdvancedStatus && in_array($value, $configuredGroups['status'], TRUE)) ||
+              ($civicrm_useAdvancedType && in_array($value, $configuredGroups['type'], TRUE))
             ) {
               // group was found; remove
               plgAuthenticationCiviCRM::_removeUserFromGroup($value, $result->id);
@@ -491,7 +493,7 @@ class plgAuthenticationCiviCRM extends JPlugin
           $assignedGroups[] = $configuredGroups['type'][$mem['membership_type_id']];
         }
       }
-      //CRM_Core_Error::debug_var('$memStatusWeight', $memStatusWeight);
+      //CRM_Core_Error::debug_var('$assignedGroups', $assignedGroups);
     }
 
     //cycle through and assign groups
@@ -513,8 +515,8 @@ class plgAuthenticationCiviCRM extends JPlugin
     // placed in $groups_array.
     // this method ignores any other group that a user may belong to (eg Administrators, Super User)
     foreach ($userACLGroups as $value) {
-      if (in_array($value, $configuredGroups['status'], TRUE) ||
-        in_array($value, $configuredGroups['type'], TRUE)
+      if (in_array($value, $configuredGroups['status']) ||
+        in_array($value, $configuredGroups['type'])
       ) {
         // group was found in array; let's now check that the group we are assigned is the correct level
         // check based on both status and type option; remove if not;
@@ -626,37 +628,58 @@ class plgAuthenticationCiviCRM extends JPlugin
 
   function _removeUserFromGroup($groupId, $userId){
     // Get the user object.
-    $R_user = & JUser::getInstance((int) $userId);
-
-    //echo "UserId = ".$userId."<br>";
-    //echo "GroupId = ".$groupId."<br>";
-    $key = array_search($groupId, $R_user->groups);
-    //echo "key = ".$key."<br>";
-    //print("<pre>".print_r($R_user->groups, TRUE)."</pre>");
+    $user =& JUser::getInstance((int) $userId);
+    $key = array_search($groupId, $user->groups);
+    //Civi::log()->debug('_removeUserFromGroup', array('user' => $user, 'key' => $key));
 
     //Remove the user from the group if necessary.
-    if (array_key_exists($key, $R_user->groups)) {
+    if (array_key_exists($key, $user->groups)) {
       // Remove the user from the group.
-      unset($R_user->groups[$key]);
+      unset($user->groups[$key]);
+
+      //Joomla doesn't allow a user with no groups; check if that's the case and add Public/Guest
+      if (empty($user->groups)) {
+        //Civi::log()->debug('user has no groups', array('user' => $user));
+        if ($grpPublicId = $this->_getGroupId('Public')) {
+          $user->groups[$grpPublicId] = $grpPublicId;
+        }
+
+        if ($grpGuestId = $this->_getGroupId('Guest')) {
+          $user->groups[$grpGuestId] = $grpGuestId;
+        }
+      }
 
       // Store the user object.
-      if (!$R_user->save()) {
-        return new JException($R_user->getError());
+      if (!$user->save()) {
+        return new JException($user->getError());
       }
     }
 
     // Set the group data for any preloaded user objects.
-    $temp = & JFactory::getUser((int) $userId);
-    $temp->groups = $R_user->groups;
+    $temp =& JFactory::getUser((int) $userId);
+    $temp->groups = $user->groups;
+    //Civi::log()->debug('_removeUserFromGroup', array('$temp' => $temp));
 
     // Set the group data for the user object in the session.
-    $temp = & JFactory::getUser();
+    $temp =& JFactory::getUser();
     if ($temp->id == $userId) {
-      $temp->groups = $R_user->groups;
+      $temp->groups = $user->groups;
     }
 
     return TRUE;
   }//_removeUserFromGroup
+
+  function _getGroupId($groupName) {
+    $db = JFactory::getDbo();
+    $select = "select id from #__usergroups where title='".$groupName."'";
+    $db->setQuery($select);
+    $db->query();
+    $data = $db->loadObject();
+
+    $groupId = $data->id;
+
+    return $groupId;
+  }
 
   /**
    * @return mixed
