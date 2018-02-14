@@ -22,6 +22,7 @@ Major Version Notes
 Minor Version Notes
 -------------
 
+* v4.1.1 :: implement fallback group(s). Joomla requires a user have at least one ACL group. If the mapping rules result in a user having all groups removed, add Public and Guest groups to user.
 * v4.0.2 :: ensure we allow access if blocking disabled
 * v3.2.1 :: fix pass by reference error affecting session headers.
 * v3.0.7 :: when cycling through memberships to apply status rules, only apply a rule for the lowest weight status. This addresses the situation where a person has an active membership and an expired membership, and the expired membership is inadvertently applied last (thus assigning a lower group than desired).
