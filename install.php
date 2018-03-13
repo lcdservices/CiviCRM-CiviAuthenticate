@@ -73,7 +73,7 @@ class plgauthenticationcivicrmInstallerScript {
     // $type is the type of change (install, update or discover_install)
     // File move is in post flight as we have to wait on the installer having installed it first.
     //
-    if ($type == "install") {
+    if (in_array($type, array("install", "update"))) {
 
       $path1 = JPATH_SITE . '/plugins/authentication/civicrm/fields';
       $path2 = JPATH_SITE . '/administrator/components/com_civicrm/civicrm/joomla/site/elements';
