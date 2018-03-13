@@ -75,18 +75,16 @@ class plgauthenticationcivicrmInstallerScript {
     //
     if ($type == "install") {
 
-      $path1 = JPATH_SITE . '/plugins/authentication/civicrm';
+      $path1 = JPATH_SITE . '/plugins/authentication/civicrm/fields';
       $path2 = JPATH_SITE . '/administrator/components/com_civicrm/civicrm/joomla/site/elements';
 
-      $filename = 'civimembershiplevels.php';
-      echo '<p>Move from: ' . $path1 . '/' . $filename . '</p>';
-      echo '<p>To: ' . $path2 . '/' . $filename . '</p>';
-      JFile::copy($path1 . '/' . $filename, $path2 . '/' . $filename);
-
-      $filename = 'civimembershiptypes.php';
-      echo '<p>Move from: ' . $path1 . '/' . $filename . '</p>';
-      echo '<p>To: ' . $path2 . '/' . $filename . '</p>';
-      JFile::copy($path1 . '/' . $filename, $path2 . '/' . $filename);
+      foreach (array('civimembershiplevels.php', 'civimembershiptypes.php') as $filename) {
+        $from = $path1 . '/' . $filename;
+        $to = $path2 . '/' . $filename;
+        echo '<p>Move from: ' . $from . '</p>';
+        echo '<p>To: ' . $to . '</p>';
+        JFile::copy($from, $to);
+      }
 
       echo '<p>' . JText::_('Done dealing with files injected into CiviCRM ') . '</p>';
       echo '<p>' . JText::_('PLG_CIVICRM_POSTFLIGHT_' . strtoupper($type) . '_TEXT') . '</p>';
