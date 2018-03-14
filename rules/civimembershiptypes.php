@@ -1,9 +1,9 @@
 <?php
 /**
- * @version        $Id: mobile.php 20196 2011-01-09 02:40:25Z ian $
- * @package        Joomla.Framework
- * @subpackage     Form
- * @license		GNU General Public License version 2 or later; see LICENSE.txt
+ * @version      $Id: mobile.php 20196 2011-01-09 02:40:25Z ian $
+ * @package      Joomla.Framework
+ * @subpackage   Form
+ * @license      GNU General Public License version 2 or later; see LICENSE.txt
  */
 
 defined('JPATH_BASE') or die;
@@ -13,31 +13,29 @@ jimport('joomla.form.formrule');
 /**
  * Form Rule class for the Joomla Framework.
  *
- * @package        Joomla.Framework
- * @since          1.6
+ * @package      Joomla.Framework
+ * @since        1.6
  */
-class JFormRuleCiviMembershipTypes extends JFormRule
-{
+class JFormRuleCiviMembershipTypes extends JFormRule {
   /**
    * Method to test the username for uniqueness.
    *
-   * @param    object    $element    The JXMLElement object representing the <field /> tag for the
+   * @param    object $element  The JXMLElement object representing the <field /> tag for the
    *                                 form field object.
-   * @param    mixed     $value      The form field value to validate.
-   * @param    string    $group      The field name group control value. This acts as as an array
-   *                                 container for the field. For example if the field has name="foo"
-   *                                 and the group value is set to "bar" then the full field name
-   *                                 would end up being "bar[foo]".
-   * @param    object    $input      An optional JRegistry object with the entire data set to validate
-   *                                 against the entire form.
-   * @param    object    $form       The form object for which the field is being tested.
+   * @param    mixed $value     The form field value to validate.
+   * @param    string $group    The field name group control value. This acts as as an array
+   *                            container for the field. For example if the field has name="foo"
+   *                            and the group value is set to "bar" then the full field name
+   *                            would end up being "bar[foo]".
+   * @param    object $input    An optional JRegistry object with the entire data set to validate
+   *                            against the entire form.
+   * @param    object $form     The form object for which the field is being tested.
    *
-   * @return   boolean               True if the value is valid, false otherwise.
+   * @return   boolean          True if the value is valid, false otherwise.
    * @since    1.6
    * @throws   JException on invalid rule.
    */
-  public function test(&$element, $value, $group = null, &$input = null, &$form = null)
-  {
+  public function test(&$element, $value, $group = NULL, &$input = NULL, &$form = NULL) {
     /*
      * Here we match the value with a specific format. You may also use any kind of validation,
      * If you need a value of another field as well from the same form then use the following method:
@@ -45,9 +43,9 @@ class JFormRuleCiviMembershipTypes extends JFormRule
      * this gived you the value of the Id field
      */
 
-    require_once JPATH_ROOT.'/'.'administrator/components/com_civicrm/civicrm.settings.php';
+    require_once JPATH_ROOT . '/administrator/components/com_civicrm/civicrm.settings.php';
     require_once 'CRM/Core/Config.php';
-    $config =& CRM_Core_Config::singleton( );
+    $config =& CRM_Core_Config::singleton();
 
     //CRM_Core_Error::debug_var('test: $element', $element);
     //CRM_Core_Error::debug_var('test: $value', $value);
@@ -60,12 +58,12 @@ class JFormRuleCiviMembershipTypes extends JFormRule
 
     $unique = TRUE;
     $params = $input->get('params');
-    for ( $x = 1; $x <= 8; $x++ ) {
+    for ($x = 1; $x <= 8; $x++) {
       $fldName = "{$fldBase}_{$x}";
       $fld = $params->$fldName;
       //CRM_Core_Error::debug_var("test: $fldName", $fld);
 
-      if ( $element['name'] != $fldName &&
+      if ($element['name'] != $fldName &&
         !empty($value) &&
         $value == $fld
       ) {
@@ -82,4 +80,5 @@ class JFormRuleCiviMembershipTypes extends JFormRule
 
     return $unique;
   }
+
 }
