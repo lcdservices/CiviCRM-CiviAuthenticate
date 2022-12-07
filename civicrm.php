@@ -310,7 +310,6 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
               ($civicrm_useAdvancedType && in_array($JGroupID, $configuredGroups['type'], TRUE))
             ) {
               // group was found; remove
-              //$this->_removeUserFromGroup($value, $JUserID);
               UserHelper::removeUserFromGroup($JUserID, $JGroupID);
             }
           }
