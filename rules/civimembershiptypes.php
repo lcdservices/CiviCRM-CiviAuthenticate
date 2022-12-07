@@ -35,7 +35,7 @@ class JFormRuleCiviMembershipTypes extends JFormRule {
    * @since    1.6
    * @throws   JException on invalid rule.
    */
-  public function test(&$element, $value, $group = NULL, &$input = NULL, &$form = NULL) {
+  public function test($element, $value, $group = NULL, $input = NULL, $form = NULL) {
     /*
      * Here we match the value with a specific format. You may also use any kind of validation,
      * If you need a value of another field as well from the same form then use the following method:

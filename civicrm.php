@@ -1,4 +1,10 @@
 <?php
+
+/**
+ * @package     Joomla.Plugin
+ * @subpackage  Authentication.joomla
+ */
+
 /**
  * Joomla/CiviCRM Authentication plugin
  *
@@ -8,7 +14,7 @@
  *
  * @author      Henry Bennett <henry@bec-cave.org.uk>
  *              Brian Shaughnessy <brian@lcdservices.biz>
- * @version     2.1.0
+ * @version     5.0.0
  * @package     Joomla
  * @subpackage  JFramework
  * @since       Joomla 1.6
@@ -22,281 +28,181 @@
  * version 2.1.0 by Brian Shaughnessy
  * version 2.5.0 by Brian Shaughnessy
  * version 2.6.0 by Brian Shaughnessy (CiviCRM 4.4/Joomla 2.5.18 compatibility)
+ * version 5.0.0 by Aidan Saunders (CiviCRM 5.56/Joomla 4 compatibility)
  *
  * see current notes in the README.md file
  *
  * For updates, see: https://github.com/lcdservices/CiviCRM-CiviAuthenticate
+ *
+ * Based on Joomla Core authentication:
+ * @copyright   (C) 2006 Open Source Matters, Inc. <https://www.joomla.org>
+ * @license     GNU General Public License version 2 or later; see LICENSE.txt
+ *
+ * @phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
  */
 
-defined('_JEXEC') or die;
+use Joomla\CMS\Authentication\Authentication;
+use Joomla\CMS\Helper\AuthenticationHelper;
+use Joomla\CMS\Language\Text;
+use Joomla\CMS\Plugin\CMSPlugin;
+use Joomla\CMS\Plugin\PluginHelper;
+use Joomla\CMS\User\User;
+use Joomla\CMS\User\UserHelper;
+use Joomla\CMS\Router\Route;
+use Joomla\CMS\Uri\Uri;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
 
 /**
  * Joomla/CiviCRM Authentication plugin
  *
- * @package     Joomla.Plugin
- * @subpackage  Authentication.joomla
- * @since       1.5
+ * @since  1.5
  */
-class plgAuthenticationCiviCRM extends JPlugin {
-  /**
-   * This method should handle any authentication and report back to the subject
-   *
-   * @param   array $credentials  Array holding the user credentials
-   * @param   array $options      Array of extra options
-   * @param   object &$response   Authentication response object
-   *
-   * @return  bool
-   *
-   * @since 1.5
-   */
-  public function onUserAuthenticate($credentials, $options, &$response) {
-    $response->type = 'Joomla';
+class PlgAuthenticationCiviCRM extends CMSPlugin
+{
+    /**
+     * Application object
+     *
+     * @var    \Joomla\CMS\Application\CMSApplication
+     * @since  4.0.0
+     */
+    protected $app;
 
-    // Joomla does not like blank passwords
-    if (empty($credentials['password'])) {
-      $response->status = JAuthentication::STATUS_FAILURE;
-      $response->error_message = JText::_('JGLOBAL_AUTH_EMPTY_PASS_NOT_ALLOWED');
+    /**
+     * Database object
+     *
+     * @var    \Joomla\Database\DatabaseDriver
+     * @since  4.0.0
+     */
+    protected $db;
 
-      return FALSE;
-    }
+    /**
+     * This method should handle any authentication and report back to the subject
+     *
+     * @param   array   $credentials  Array holding the user credentials
+     * @param   array   $options      Array of extra options
+     * @param   object  &$response    Authentication response object
+     *
+     * @return  void
+     *
+     * @since   1.5
+     */
+    public function onUserAuthenticate($credentials, $options, &$response)
+    {
+        //CiviCRM: construct redirection urls
+        $redirectURLs = self::_getRedirectionURLs();
 
-    // Initialise variables.
-    $conditions = '';
+        //CiviCRM: JLog
+        $response->type = 'CiviCRM';
 
-    //CiviCRM: construct redirection urls
-    $redirectURLs = self::_getRedirectionURLs();
+        // Joomla does not like blank passwords
+        if (empty($credentials['password'])) {
+            $response->status        = Authentication::STATUS_FAILURE;
+            $response->error_message = Text::_('JGLOBAL_AUTH_EMPTY_PASS_NOT_ALLOWED');
 
-    //CiviCRM: JLog
-    $response->type = 'CiviCRM';
-
-    // Get a database object
-    $db = JFactory::getDbo();
-    $query = $db->getQuery(TRUE);
-
-    $query->select('id, username, password');
-    $query->from('#__users');
-
-    //CiviCRM: accommodate username OR email
-    if ($this->params->get('username_email')) {
-      $query->where('username=' . $db->quote($credentials['username']) . ' OR email=' . $db->quote($credentials['username']));
-    }
-    else {
-      $query->where('username=' . $db->quote($credentials['username']));
-    }
-
-    $db->setQuery($query);
-    $result = $db->loadObject();
-
-    if ($result) {
-      //CiviCRM: set credentials username as it may have been passed as the email
-      if ($this->params->get('username_email')) {
-        $credentials['username'] = $response->username = $result->username;
-      }
-
-      $match = JUserHelper::verifyPassword($credentials['password'], $result->password, $result->id);
-
-      if ($match === TRUE) {
-        // Bring this in line with the rest of the system
-        $user = JUser::getInstance($result->id);
-        $response->email = $user->email;
-        $response->fullname = $user->name;
-
-        if (JFactory::getApplication()->isAdmin()) {
-          $response->language = $user->getParam('admin_language');
-        }
-        else {
-          $response->language = $user->getParam('language');
-        }
-
-        //CiviCRM: bypass member check for Joomla admins
-        //CiviCRM: use JFactory::getUser to get the object for authorise() function
-        $adminTestUser = JFactory::getUser($result->id);
-        if ($adminTestUser->authorise('core.login.admin')) {
-          $response->status = JAuthentication::STATUS_SUCCESS;
-          $response->error_message = '';
-        }
-        //CiviCRM: run through membership checks
-        else {
-          self::_checkMembership($redirectURLs, $user, $response, $result);
-        }
-      }
-      else {
-        // Invalid password
-        $response->status = JAuthentication::STATUS_FAILURE;
-        $response->error_message = JText::_('JGLOBAL_AUTH_INVALID_PASS');
-
-        //CiviCRM: redirection
-        $app = JFactory::getApplication();
-        $app->enqueueMessage($response->error_message, 'error');
-        $app->redirect($redirectURLs['bad_password']);
-      }
-    }
-    else {
-      // Invalid user
-      $response->status = JAuthentication::STATUS_FAILURE;
-      $response->error_message = JText::_('JGLOBAL_AUTH_NO_USER');
-
-      //CiviCRM: no username found
-      $app = JFactory::getApplication();
-      $app->enqueueMessage($response->error_message, 'error');
-      $app->redirect($redirectURLs['no_match']);
-    }
-
-    // Check the two factor authentication
-    if ($response->status == JAuthentication::STATUS_SUCCESS) {
-      require_once JPATH_ADMINISTRATOR . '/components/com_users/helpers/users.php';
-
-      //if J3.3 check for two factor
-      $jversion = new JVersion();
-      $joomlaVersion = $jversion->getShortVersion();
-      if (version_compare($joomlaVersion, '3.3') >= 0) {
-        $methods = UsersHelper::getTwoFactorMethods();
-      }
-
-      if (count($methods) <= 1) {
-        // No two factor authentication method is enabled
-        return;
-      }
-
-      require_once JPATH_ADMINISTRATOR . '/components/com_users/models/user.php';
-
-      $model = new UsersModelUser();
-
-      // Load the user's OTP (one time password, a.k.a. two factor auth) configuration
-      if (!array_key_exists('otp_config', $options)) {
-        $otpConfig = $model->getOtpConfig($result->id);
-        $options['otp_config'] = $otpConfig;
-      }
-      else {
-        $otpConfig = $options['otp_config'];
-      }
-
-      // Check if the user has enabled two factor authentication
-      if (empty($otpConfig->method) || ($otpConfig->method == 'none')) {
-        // Warn the user if he's using a secret code but he has not
-        // enabed two factor auth in his account.
-        if (!empty($credentials['secretkey'])) {
-          try
-          {
-            $app = JFactory::getApplication();
-
-            $this->loadLanguage();
-
-            $app->enqueueMessage(JText::_('PLG_AUTH_JOOMLA_ERR_SECRET_CODE_WITHOUT_TFA'), 'warning');
-          }
-          catch (Exception $exc)
-          {
-            // This happens when we are in CLI mode. In this case
-            // no warning is issued
             return;
-          }
         }
 
-        return;
-      }
+        $db    = $this->db;
+        $query = $db->getQuery(true)
+            ->select($db->quoteName(['id', 'password']))
+            ->from($db->quoteName('#__users'));
 
-      // Load the Joomla! RAD layer
-      if (!defined('FOF_INCLUDED')) {
-        include_once JPATH_LIBRARIES . '/fof/include.php';
-      }
-
-      // Try to validate the OTP
-      FOFPlatform::getInstance()->importPlugin('twofactorauth');
-
-      $otpAuthReplies = FOFPlatform::getInstance()->runPlugins('onUserTwofactorAuthenticate', array($credentials, $options));
-
-      $check = FALSE;
-
-      /*
-       * This looks like noob code but DO NOT TOUCH IT and do not convert
-       * to in_array(). During testing in_array() inexplicably returned
-       * null when the OTEP begins with a zero! o_O
-       */
-      if (!empty($otpAuthReplies)) {
-        foreach ($otpAuthReplies as $authReply) {
-          $check = $check || $authReply;
-        }
-      }
-
-      // Fall back to one time emergency passwords
-      if (!$check) {
-        // Did the user use an OTEP instead?
-        if (empty($otpConfig->otep)) {
-          if (empty($otpConfig->method) || ($otpConfig->method == 'none')) {
-            // Two factor authentication is not enabled on this account.
-            // Any string is assumed to be a valid OTEP.
-
-            return TRUE;
-          }
-          else {
-            /*
-             * Two factor authentication enabled and no OTEPs defined. The
-             * user has used them all up. Therefore anything he enters is
-             * an invalid OTEP.
-             */
-            return FALSE;
-          }
+        //CiviCRM: accommodate username OR email
+        if ($this->params->get('username_email')) {
+            $query->where($db->quoteName('username') . ' = :username' . ' OR ' . $db->quoteName('email') . ' = :email');
+            $query->bind(':username', $credentials['username']);
+            $query->bind(':email', $credentials['username']);
+        } else {
+          $query->where($db->quoteName('username') . ' = :username');
+          $query->bind(':username', $credentials['username']);
         }
 
-        // Clean up the OTEP (remove dashes, spaces and other funny stuff
-        // our beloved users may have unwittingly stuffed in it)
-        $otep = $credentials['secretkey'];
-        $otep = filter_var($otep, FILTER_SANITIZE_NUMBER_INT);
-        $otep = str_replace('-', '', $otep);
+        $db->setQuery($query);
+        $result = $db->loadObject();
 
-        $check = FALSE;
+        if ($result) {
+            //CiviCRM: set credentials username as it may have been passed as the email
+            if ($this->params->get('username_email')) {
+                $credentials['username'] = $response->username = $result->username;
+            }
 
-        // Did we find a valid OTEP?
-        if (in_array($otep, $otpConfig->otep)) {
-          // Remove the OTEP from the array
-          $otpConfig->otep = array_diff($otpConfig->otep, array($otep));
+            $match = UserHelper::verifyPassword($credentials['password'], $result->password, $result->id);
 
-          $model->setOtpConfig($result->id, $otpConfig);
+            if ($match === true) {
+                // Bring this in line with the rest of the system
+                $user               = User::getInstance($result->id);
+                $response->email    = $user->email;
+                $response->fullname = $user->name;
 
-          // Return true; the OTEP was a valid one
-          $check = TRUE;
+                if ($this->app->isClient('administrator')) {
+                    $response->language = $user->getParam('admin_language');
+                } else {
+                    $response->language = $user->getParam('language');
+                }
+
+                //CiviCRM: bypass member check for Joomla admins
+                //CiviCRM: use JFactory::getUser to get the object for authorise() function
+                $adminTestUser = JFactory::getUser($result->id);
+                if ($adminTestUser->authorise('core.login.admin')) {
+                    $response->status = Authentication::STATUS_SUCCESS;
+                    $response->error_message = '';
+                }
+                //CiviCRM: run through membership checks
+                else {
+                   self::_checkMembership($redirectURLs, $user, $response, $result);
+                }
+
+            } else {
+                // Invalid password
+                $response->status        = Authentication::STATUS_FAILURE;
+                $response->error_message = Text::_('JGLOBAL_AUTH_INVALID_PASS');
+                // CiviCRM: redirection
+                $this->app->redirect($redirectURLs['bad_password']);
+            }
+        } else {
+            // Let's hash the entered password even if we don't have a matching user for some extra response time
+            // By doing so, we mitigate side channel user enumeration attacks
+            UserHelper::hashPassword($credentials['password']);
+
+            // Invalid user
+            $response->status        = Authentication::STATUS_FAILURE;
+            $response->error_message = Text::_('JGLOBAL_AUTH_NO_USER');
+            // CiviCRM: redirect
+            $this->app->redirect($redirectURLs['no_match']);
         }
-      }
-
-      if (!$check) {
-        $response->status = JAuthentication::STATUS_FAILURE;
-        $response->error_message = JText::_('JGLOBAL_AUTH_INVALID_SECRETKEY');
-      }
     }
-  }//onUserAuthenticate
 
-  /*
-   * backward compatibility
-   */
-  function onAuthenticate($credentials, $options, &$response) {
-    $this->onUserAuthenticate($credentials, $options, $response);
-  }
+  // Everything below here is CiviCRM stuff
 
   function _getRedirectionURLs() {
+
     // experimental method for creating the URL redirect options.
     // old method was unreliable.
     // use 0 = path constructor lookup
     // use 1 = itemid constructor lookup
 
     $url_creat_method = 0;
-    $menu = JFactory::getApplication()->getMenu('site');
-    $redirectURLs = array();
+    $menu = $this->app->getMenu('site');
+    $redirectURLs = [];
 
     $redirectURLs['old_membership_itemid'] = $this->params->get('redirect_old_membership');
     $redirectURLs['old_membership_item'] = $menu->getItem($redirectURLs['old_membership_itemid']);
-    $redirectURLs['old_membership'] = JRoute::_($redirectURLs['old_membership_item']->link
+    $redirectURLs['old_membership'] = Route::_($redirectURLs['old_membership_item']->link
       . '&Itemid='
       . $redirectURLs['old_membership_itemid'], FALSE);
 
     $redirectURLs['bad_password_itemid'] = $this->params->get('redirect_bad_password');
     $redirectURLs['bad_password_item'] = $menu->getItem($redirectURLs['bad_password_itemid']);
-    $redirectURLs['bad_password'] = JRoute::_($redirectURLs['bad_password_item']->link
+    $redirectURLs['bad_password'] = Route::_($redirectURLs['bad_password_item']->link
       . '&Itemid='
       . $redirectURLs['bad_password_itemid'], FALSE);
 
     $redirectURLs['no_match_itemid'] = $this->params->get('redirect_no_match');
     $redirectURLs['no_match_item'] = $menu->getItem($redirectURLs['no_match_itemid']);
-    $redirectURLs['no_match'] = JRoute::_($redirectURLs['no_match_item']->link
+    $redirectURLs['no_match'] = Route::_($redirectURLs['no_match_item']->link
       . '&Itemid='
       . $redirectURLs['no_match_itemid'], FALSE);
 
@@ -304,7 +210,7 @@ class plgAuthenticationCiviCRM extends JPlugin {
     $redirectURLs['expired_method'] = $this->params->get('expired_method');
     $redirectURLs['expired_itemid'] = $this->params->get('redirect_expired_menu');
     $redirectURLs['expired_item'] = $menu->getItem($redirectURLs['expired_itemid']);
-    $redirectURLs['expired'] = JRoute::_($redirectURLs['expired_item']->link
+    $redirectURLs['expired'] = Route::_($redirectURLs['expired_item']->link
       . '&Itemid='
       . $redirectURLs['expired_itemid'], FALSE);
     $redirectURLs['expired_contribpageid'] = $this->params->get('redirect_expired_contribpage');
@@ -374,26 +280,25 @@ class plgAuthenticationCiviCRM extends JPlugin {
     $civicrm_useAdvancedStatus = $this->params->get('advanced_features_status');
     $civicrm_useAdvancedType = $this->params->get('advanced_features_type');
 
-    $contactID = $this->_getCiviContact($user);
-    $contactID = $contactID + 0; //ensure integer type conversion
+    $contactID = (int) $this->_getCiviContact($user);
+    // $contactID = $contactID + 0; //ensure integer type conversion
     $JUserID = $result->id;
 
     $membership = $this->_getContactMembership($contactID);
     //CRM_Core_Error::debug_var('membership', $membership);
 
     //current ACL groups for user
-    $userACLGroups = JUserHelper::getUserGroups($result->id);
+    $userACLGroups = UserHelper::getUserGroups($JUserID);
     //CRM_Core_Error::debug_var('$userACLGroups', $userACLGroups);
 
     // Make sure there is a membership record.
     if (empty($membership)) {
       //if blocking access, fail
       if ($this->params->get('block_access')) {
-        $response->status = JAuthentication::STATUS_FAILURE;
+        $response->status = Authentication::STATUS_FAILURE;
         $response->error_message = 'No current membership records for this contact.';
 
-        $app = JFactory::getApplication();
-        $app->redirect($redirectURLs['old_membership']);
+        $this->app->redirect($redirectURLs['old_membership']);
       }
       //if not blocking, proceed
       else {
@@ -405,11 +310,11 @@ class plgAuthenticationCiviCRM extends JPlugin {
               ($civicrm_useAdvancedType && in_array($value, $configuredGroups['type'], TRUE))
             ) {
               // group was found; remove
-              plgAuthenticationCiviCRM::_removeUserFromGroup($value, $result->id);
+              $this->_removeUserFromGroup($value, $result->id);
             }
           }
         }
-        $response->status = JAuthentication::STATUS_SUCCESS;
+        $response->status = Authentication::STATUS_SUCCESS;
         $response->error_message = '';
       }
     }
@@ -423,7 +328,7 @@ class plgAuthenticationCiviCRM extends JPlugin {
     $memStatusWeight = NULL;
 
     //array of groups the user should be assigned to
-    $assignedGroups = array();
+    $assignedGroups = [];
 
     //cycle thorugh and determine what groups the user should be assigned
     foreach ($membership as $mem) {
@@ -439,7 +344,7 @@ class plgAuthenticationCiviCRM extends JPlugin {
         ($civicrm_use_current && $membership_status_iscurrent) ||
         (!$civicrm_use_current && $membership_status <= $civicrm_is_current)
       ) {
-        $response->status = JAuthentication::STATUS_SUCCESS;
+        $response->status = Authentication::STATUS_SUCCESS;
         $response->error_message = '';
         $membership_status_old = FALSE;
         $statusCurrent = TRUE;
@@ -467,7 +372,9 @@ class plgAuthenticationCiviCRM extends JPlugin {
         if (!$this->params->get('typeacl_limittocurrent') ||
           ($this->params->get('typeacl_limittocurrent') && $statusCurrent)
         ) {
-          $assignedGroups[] = $configuredGroups['type'][$mem['membership_type_id']];
+          if ($configuredGroups['type'][$mem['membership_type_id']]) {
+            $assignedGroups[] = $configuredGroups['type'][$mem['membership_type_id']];
+          }
         }
       }
       //CRM_Core_Error::debug_var('$assignedGroups', $assignedGroups);
@@ -476,7 +383,7 @@ class plgAuthenticationCiviCRM extends JPlugin {
     //cycle through and assign groups
     foreach ($assignedGroups as $group) {
       if (!JUserHelper::addUserToGroup($JUserID, $group)) {
-        return new JException(JText::_('Error Adding user to group'));
+        return new \Exception(JText::_('Error Adding user to group'));
       }
     }
 
@@ -489,7 +396,7 @@ class plgAuthenticationCiviCRM extends JPlugin {
     // remove the user from any groups they shouldn't belong to
     // cycle through the groups that the user belongs to against the list of groups
     // that we have specified in the plugin Advanced Options that we've already
-    // placed in $groups_array.
+    // placed in $configuredGroups.
     // this method ignores any other group that a user may belong to (eg Administrators, Super User)
     foreach ($userACLGroups as $value) {
       if (in_array($value, $configuredGroups['status']) ||
@@ -519,28 +426,26 @@ class plgAuthenticationCiviCRM extends JPlugin {
           //build url; append contact id and checksum
           $expired_redirect = $redirectURLs['expired_contribpage'] . '&id=' . $redirectURLs['expired_contribpageid'];
           $expired_redirect = $expired_redirect . '&cs=' . $checksumValue . '&cid=' . $contactID;
-          $expired_redirect = JRoute::_($expired_redirect, FALSE);
+          $expired_redirect = Route::_($expired_redirect, FALSE);
         }
         //echo $expired_redirect; exit();
-        $response->status = JAuthentication::STATUS_FAILURE;
+        $response->status = Authentication::STATUS_FAILURE;
         $response->error_message = 'Membership has expired.';
 
-        $app =& JFactory::getApplication();
-        $app->redirect($expired_redirect);
+        $this->app->redirect($expired_redirect);
       }
       //not current, not expired, and we are blocking access
       elseif ($membership_status_old) {
-        $response->status = JAuthentication::STATUS_FAILURE;
+        $response->status = Authentication::STATUS_FAILURE;
         $response->error_message = 'Membership is not valid.';
 
-        $app =& JFactory::getApplication();
-        $app->redirect($redirectURLs['old_membership']);
+        $this->app->redirect($redirectURLs['old_membership']);
       }
     }
 
     //if we are not blocking, always set status success
     if (!$this->params->get('block_access')) {
-      $response->status = JAuthentication::STATUS_SUCCESS;
+      $response->status = Authentication::STATUS_SUCCESS;
     }
   }//_checkMembership
 
@@ -586,18 +491,18 @@ class plgAuthenticationCiviCRM extends JPlugin {
   function _getReturnURL($itemid, $method){
     $link = '';
     if ($method == 0) {
-      $db  = JFactory::getDbo();
-      $query = $db->getQuery(TRUE);
-      $query->select('id, path');
-      $query->from('#__menu');
-      $query->where('id=' . $itemid);
-      $db->SetQuery($query);
+      $query = $this->db->getQuery(TRUE)
+        ->select('id, path')
+        ->from($db->quoteName('#__menu'))
+        ->where($db->quoteName('id') . ' = :id')
+        ->bind(':id', $itemid);
+      $db->setQuery($query);
       $menuItem = $db->loadObject();
-      $link = JURI::base() . 'index.php/' . JRoute::_($menuItem->path);
+      $link = Uri::base() . 'index.php/' . Route::_($menuItem->path);
     }
     else {
       //$redirect_item = $menu->getItem($itemid);
-      //$link = JRoute::_($redirect_item->link.'&Itemid='.$itemid, FALSE);
+      //$link = Route::_($redirect_item->link.'&Itemid='.$itemid, FALSE);
     }
 
     return $link;
@@ -605,7 +510,7 @@ class plgAuthenticationCiviCRM extends JPlugin {
 
   function _removeUserFromGroup($groupId, $userId) {
     // Get the user object.
-    $user =& JUser::getInstance((int) $userId);
+    $user = new User($userId);
     $key = array_search($groupId, $user->groups);
     //Civi::log()->debug('_removeUserFromGroup', array('user' => $user, 'key' => $key));
 
@@ -628,17 +533,18 @@ class plgAuthenticationCiviCRM extends JPlugin {
 
       // Store the user object.
       if (!$user->save()) {
-        return new JException($user->getError());
+        return new \Exception($user->getError());
       }
     }
 
     // Set the group data for any preloaded user objects.
-    $temp =& JFactory::getUser((int) $userId);
+    // Ummm - what's happening here?
+    $temp = new User($userId);
     $temp->groups = $user->groups;
     //Civi::log()->debug('_removeUserFromGroup', array('$temp' => $temp));
 
     // Set the group data for the user object in the session.
-    $temp =& JFactory::getUser();
+    $temp = JFactory::getUser();
     if ($temp->id == $userId) {
       $temp->groups = $user->groups;
     }
@@ -647,15 +553,22 @@ class plgAuthenticationCiviCRM extends JPlugin {
   }//_removeUserFromGroup
 
   function _getGroupId($groupName) {
-    $db = JFactory::getDbo();
-    $select = "select id from #__usergroups where title='" . $groupName . "'";
-    $db->setQuery($select);
-    $db->query();
-    $data = $db->loadObject();
+    $db = $this->db;
+    $query = $db->getQuery(TRUE)
+      ->select('id')
+      ->from($db->quoteName('#__usergroups'))
+      ->where($db->quoteName('title') . ' = :title')
+      ->bind(':title', $groupName);
 
-    $groupId = $data->id;
+    $db->setQuery($query);
 
-    return $groupId;
+    $group = $db->loadObject();
+
+    if (!$group) {
+      return FALSE;
+    }
+
+    return $group->id;;
   }
 
   /**
@@ -669,6 +582,7 @@ class plgAuthenticationCiviCRM extends JPlugin {
     $config = CRM_Core_Config::singleton();
 
     return $config;
+    // return civicrm_initialize();
   }
 
 }
