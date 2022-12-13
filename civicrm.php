@@ -230,10 +230,10 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
   function _buildGroups() {
     //CRM_Core_Error::debug_var('$this->params', $this->params);
 
-    $groups = array(
-      'status' => array(),
-      'type' => array(),
-    );
+    $groups = [
+      'status' => [],
+      'type' => [],
+    ];
 
     //when cycling through options, check for existence of type/status
 
@@ -272,6 +272,7 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
 
     //CiviCRM: build groups array
     $configuredGroups = $this->_buildGroups();
+
     //CRM_Core_Error::debug_var('$configuredGroups', $configuredGroups);
 
     //CiviCRM: retrieve parameter values
@@ -284,7 +285,7 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
     // $contactID = $contactID + 0; //ensure integer type conversion
     $JUserID = $result->id;
 
-    $membership = $this->_getContactMembership($contactID);
+    $memberships = $this->_getContactMemberships($contactID);
     //CRM_Core_Error::debug_var('membership', $membership);
 
     //current ACL groups for user
@@ -292,7 +293,7 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
     //CRM_Core_Error::debug_var('$userACLGroups', $userACLGroups);
 
     // Make sure there is a membership record.
-    if (empty($membership)) {
+    if (empty($memberships)) {
       //if blocking access, fail
       if ($this->params->get('block_access')) {
         $response->status = Authentication::STATUS_FAILURE;
@@ -304,13 +305,14 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
       else {
         //if no membership, remove any groups assigned via status/type
         if ($civicrm_useAdvancedStatus || $civicrm_useAdvancedType) {
-          foreach ($userACLGroups as $key => $value) {
+          foreach ($userACLGroups as $JGroupID) {
             if (
-              ($civicrm_useAdvancedStatus && in_array($value, $configuredGroups['status'], TRUE)) ||
-              ($civicrm_useAdvancedType && in_array($value, $configuredGroups['type'], TRUE))
+              ($civicrm_useAdvancedStatus && in_array($JGroupID, $configuredGroups['status'], TRUE)) ||
+              ($civicrm_useAdvancedType && in_array($JGroupID, $configuredGroups['type'], TRUE))
             ) {
               // group was found; remove
-              $this->_removeUserFromGroup($value, $result->id);
+              //$this->_removeUserFromGroup($value, $JUserID);
+              UserHelper::removeUserFromGroup($JUserID, $JGroupID);
             }
           }
         }
@@ -330,8 +332,8 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
     //array of groups the user should be assigned to
     $assignedGroups = [];
 
-    //cycle thorugh and determine what groups the user should be assigned
-    foreach ($membership as $mem) {
+    //cycle through and determine what groups the user should be assigned
+    foreach ($memberships as $mem) {
       $membership_status = $mem['status_id'];
       $membership_status_details = $this->_getMembershipStatuses($membership_status);
       $membership_status_iscurrent = $membership_status_details[$membership_status]['is_current_member'];
@@ -360,7 +362,7 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
         if (!$memStatusWeight ||
           $membership_status_details[$membership_status]['weight'] < $memStatusWeight
         ) {
-          $assignedGroups[] = $this->params->get('user_group_' . $membership_status);
+          $assignedGroups[] = $configuredGroups['status'][$membership_status];
         }
         $memStatusWeight = $membership_status_details[$membership_status]['weight'];
         //CRM_Core_Error::debug_var('$memStatusWeight', $memStatusWeight);
@@ -381,8 +383,9 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
     }
 
     //cycle through and assign groups
-    foreach ($assignedGroups as $group) {
-      if (!JUserHelper::addUserToGroup($JUserID, $group)) {
+    foreach ($assignedGroups as $JGroupID) {
+      JLog::add("Adding user $JUserID to group $JGroupID: ", JLog::INFO);
+      if (!UserHelper::addUserToGroup($JUserID, $JGroupID)) {
         return new \Exception(JText::_('Error Adding user to group'));
       }
     }
@@ -398,20 +401,22 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
     // that we have specified in the plugin Advanced Options that we've already
     // placed in $configuredGroups.
     // this method ignores any other group that a user may belong to (eg Administrators, Super User)
-    foreach ($userACLGroups as $value) {
-      if (in_array($value, $configuredGroups['status']) ||
-        in_array($value, $configuredGroups['type'])
+    foreach ($userACLGroups as $JGroupID) {
+      if (in_array($JGroupID, $configuredGroups['status']) ||
+        in_array($JGroupID, $configuredGroups['type'])
       ) {
         // group was found in array; let's now check that the group we are assigned is the correct level
         // check based on both status and type option; remove if not;
-        if (!in_array($value, $assignedGroups)) {
-          $this->_removeUserFromGroup($value, $JUserID);
+        if (!in_array($JGroupID, $assignedGroups)) {
+          JLog::add("Removing user $JUserID from group $JGroupID: ", JLog::INFO);
+          //$this->_removeUserFromGroup($JGroupID, $JUserID);
+          UserHelper::removeUserFromGroup($JUserID, $JGroupID);
         }
       }
     }
 
     //process based on status IF a membership record exists and we are blocking access
-    if (!empty($membership) && $this->params->get('block_access')) {
+    if (!empty($memberships) && $this->params->get('block_access')) {
       //expired and blocking
       if ($membership_status_old && !$statusCurrent) { //expired
 
@@ -461,15 +466,15 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
     return $contactID;
   }
 
-  function _getContactMembership($contactID) {
+  function _getContactMemberships($contactID) {
     // Find the membership records for the ContactID
-    $params = array(
+    $params = [
       'version' => 3,
       'contact_id' => $contactID,
-    );
-    $membership = civicrm_api('membership', 'get', $params);
+    ];
+    $memberships = civicrm_api('membership', 'get', $params);
 
-    return $membership['values'];
+    return $memberships['values'];
   }
 
   function _generateToken($contactID) {
@@ -480,10 +485,10 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
   }
 
   function  _getMembershipStatuses($memStatusId) {
-    $statusDetails = civicrm_api('membership_status', 'get', array(
+    $statusDetails = civicrm_api('membership_status', 'get', [
       'version' => 3,
       'id' => $memStatusId,
-    ));
+    ]);
 
     return $statusDetails['values'];
   }
@@ -508,6 +513,9 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
     return $link;
   }
 
+  /*
+   * @deprecated Use UserHelper::removeUserFromGroup
+  */
   function _removeUserFromGroup($groupId, $userId) {
     // Get the user object.
     $user = new User($userId);
