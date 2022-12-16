@@ -252,7 +252,7 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
     // by default we have enabled 8 levels of membership TYPE. If you have more
     // than 8 then you need to modify the section below.
     if ($this->params->get('advanced_features_type')) {
-      for ($i = 1; $i <= 8; $i++) {
+      for ($i = 1; $i <= 28; $i++) {
         if ($this->params->get('CiviMember_TACL_Level_' . $i)) {
           $groups['type'][$this->params->get('CiviMember_TACL_Level_' . $i)] = $this->params->get('TACL_user_group_' . $i);
         }
