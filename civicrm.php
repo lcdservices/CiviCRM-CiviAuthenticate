@@ -184,7 +184,6 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
     // use 0 = path constructor lookup
     // use 1 = itemid constructor lookup
 
-    $url_creat_method = 0;
     $menu = $this->app->getMenu('site');
     $redirectURLs = [];
 
@@ -241,9 +240,9 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
     // by default we have enabled 8 levels of membership STATUS. If you have more
     // than 8 then you need to modify the section below.
     if ($this->params->get('advanced_features_status')) {
-      for ($i = 1; $i <= 8; $i++) {
-        if ($this->params->get('CiviMember_Level_' . $i)) {
-          $groups['status'][$this->params->get('CiviMember_Level_' . $i)] = $this->params->get('user_group_' . $i);
+      foreach ($this->params->extract('statusmapping')->getIterator() as $item) {
+        if ($item->status && $item->group) {
+          $groups['status'][$item->status] = $item->group;
         }
       }
     }
@@ -252,9 +251,9 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
     // by default we have enabled 8 levels of membership TYPE. If you have more
     // than 8 then you need to modify the section below.
     if ($this->params->get('advanced_features_type')) {
-      for ($i = 1; $i <= 28; $i++) {
-        if ($this->params->get('CiviMember_TACL_Level_' . $i)) {
-          $groups['type'][$this->params->get('CiviMember_TACL_Level_' . $i)] = $this->params->get('TACL_user_group_' . $i);
+      foreach ($this->params->extract('typemapping')->getIterator() as $item) {
+        if ($item->type && $item->group) {
+          $groups['type'][$item->type] = $item->group;
         }
       }
     }
