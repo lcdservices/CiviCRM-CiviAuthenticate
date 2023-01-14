@@ -7,7 +7,7 @@
 	<license>http://www.gnu.org/licenses/gpl-2.0.html GNU/GPL</license>
 	<authorEmail>henry@nospam.bec-cave.org.uk, brian@lcdservices.biz</authorEmail>
 	<authorUrl>www.civicrm.org</authorUrl>
-	<version>3.3.3</version>
+	<version>4.1.1</version>
 	<description>PLG_CIVICRM_DESCRIPTION</description>
 	<scriptfile>install.php</scriptfile>
 	<files>
@@ -119,10 +119,7 @@
 				/>
 			
 				<field name="redirect_expired_contribpage"
-               type="sql"
-               query="SELECT id, title FROM civicrm_contribution_page WHERE is_active = 1 ORDER BY title"
-               key_field="id"
-               value_field="title"
+               type="civicontributionpages"
 					     default=""
 					     label="PLG_CIVICRM_FIELD_REDIRECT_EXPIRED_CONTRIB_LABEL"
 					     description="PLG_CIVICRM_FIELD_REDIRECT_EXPIRED_CONTRIB_DESC"
@@ -277,6 +274,15 @@
 					label="PLG_CIVICRM_FIELD_USE_ADVANCED_MEMEBERSHIP_LABEL"
 				>
           <option value="1">JYes</option>
+					<option value="0">JNo</option>
+				</field>
+
+				<field name="typeacl_limittocurrent" type="radio"
+							 default="0"
+							 description="PLG_CIVICRM_FIELD_TYPEACL_LIMITTOCURRENT_DESC"
+							 label="PLG_CIVICRM_FIELD_TYPEACL_LIMITTOCURRENT_LABEL"
+				>
+					<option value="1">JYes</option>
 					<option value="0">JNo</option>
 				</field>
 

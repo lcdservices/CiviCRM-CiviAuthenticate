@@ -10,6 +10,10 @@ See also: http://wiki.civicrm.org/confluence/display/CRMDOC/Joomla+CiviCRM+Membe
 Major Version Notes
 -------------
 
+* v4.1.x :: added option on Membership Type ACL feature to limit to current members. When enabled, the type-based rules are only applied if the user is a current member. When disabled, the rule are applied regardless of status.
+* v4.0.x :: significant restructuring to status/type handling. we now consider both sets of options separately, and outside of the master status check. this allows users to assign based on status and type at the same time. care should be taken to avoid logical conflicts (i.e. where assignments based on type and status would conflict). because this introduces some changes in behavior, please test thoroughly when implementing.
+* v3.5.x :: support multiple mappings per user
+* v3.4.x :: bug fixes: in membership type mapping, support selecting memberships in any order; fix condition structure when determine what groups to remove
 * v3.3.x :: implement extension update path
 * v3.2.x :: fixes contrib page parameter selection
 * v3.0.x :: updates for Joomla 3.x compatibility. Also compatible with Joomla 2.5.18+.
@@ -18,6 +22,8 @@ Major Version Notes
 Minor Version Notes
 -------------
 
+* v4.1.1 :: implement fallback group(s). Joomla requires a user have at least one ACL group. If the mapping rules result in a user having all groups removed, add Public and Guest groups to user.
+* v4.0.2 :: ensure we allow access if blocking disabled
 * v3.2.1 :: fix pass by reference error affecting session headers.
 * v3.0.7 :: when cycling through memberships to apply status rules, only apply a rule for the lowest weight status. This addresses the situation where a person has an active membership and an expired membership, and the expired membership is inadvertently applied last (thus assigning a lower group than desired).
 * v3.0.5 :: releases the lock on membership type levels in the advanced level option tab. Note that you may only select a membership level and apply the ACL group once (i.e. you may not apply multiple ACL groups to a single membership type).
