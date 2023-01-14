@@ -279,7 +279,7 @@ class plgAuthenticationCiviCRM extends JPlugin {
     // use 1 = itemid constructor lookup
 
     $url_creat_method = 0;
-    $menu = JApplication::getMenu('site');
+    $menu = JFactory::getApplication()->getMenu('site');
     $redirectURLs = array();
 
     $redirectURLs['old_membership_itemid'] = $this->params->get('redirect_old_membership');
