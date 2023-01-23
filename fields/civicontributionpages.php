@@ -37,7 +37,7 @@ class JFormFieldCiviContributionPages extends JFormField {
    */
   protected function getInput() {
     // Initialize variables.
-    $html = array();
+    $html = [];
 
     // Initiate CiviCRM
     require_once JPATH_ROOT . '/administrator/components/com_civicrm/civicrm.settings.php';
@@ -50,12 +50,15 @@ class JFormFieldCiviContributionPages extends JFormField {
     $attr .= $this->multiple ? ' multiple="multiple"' : '';
 
     // Get the field options.
-    $options = array();
+    $options = [];
     $options[] = JHTML::_('select.option', '0', JText::_('- Select Contribution Page -'));
-    $query = 'SELECT id, title FROM civicrm_contribution_page WHERE is_active = 1 ORDER BY title';
-    $dao = CRM_Core_DAO::executeQuery($query);
-    while ($dao->fetch()) {
-      $options[] = JHTML::_('select.option', $dao->id, $dao->title);
+    $contributionPages = \Civi\Api4\ContributionPage::get(FALSE)
+      ->addSelect('title')
+      ->addWhere('is_active', '=', TRUE)
+      ->addOrderBy('title', 'ASC')
+      ->execute();
+    foreach ($contributionPages as $contributionPage) {
+      $options[] = JHTML::_('select.option', $contributionPage['id'], $contributionPage['title']);
     }
 
     $html[] = JHtml::_('select.genericlist', $options, $this->name, trim($attr), 'value', 'text', $this->value, $this->name);
