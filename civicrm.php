@@ -407,7 +407,6 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
         // check based on both status and type option; remove if not;
         if (!in_array($JGroupID, $assignedGroups)) {
           JLog::add("Removing user $JUserID from group $JGroupID: ", JLog::INFO);
-          //$this->_removeUserFromGroup($JGroupID, $JUserID);
           UserHelper::removeUserFromGroup($JUserID, $JGroupID);
         }
       }
@@ -510,53 +509,6 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
 
     return $link;
   }
-
-  /*
-   * @deprecated Use UserHelper::removeUserFromGroup
-  */
-  function _removeUserFromGroup($groupId, $userId) {
-    // Get the user object.
-    $user = new User($userId);
-    $key = array_search($groupId, $user->groups);
-    //Civi::log()->debug('_removeUserFromGroup', array('user' => $user, 'key' => $key));
-
-    //Remove the user from the group if necessary.
-    if (array_key_exists($key, $user->groups)) {
-      // Remove the user from the group.
-      unset($user->groups[$key]);
-
-      //Joomla doesn't allow a user with no groups; check if that's the case and add Public/Guest
-      if (empty($user->groups)) {
-        //Civi::log()->debug('user has no groups', array('user' => $user));
-        if ($grpPublicId = $this->_getGroupId('Public')) {
-          $user->groups[$grpPublicId] = $grpPublicId;
-        }
-
-        if ($grpGuestId = $this->_getGroupId('Guest')) {
-          $user->groups[$grpGuestId] = $grpGuestId;
-        }
-      }
-
-      // Store the user object.
-      if (!$user->save()) {
-        return new \Exception($user->getError());
-      }
-    }
-
-    // Set the group data for any preloaded user objects.
-    // Ummm - what's happening here?
-    $temp = new User($userId);
-    $temp->groups = $user->groups;
-    //Civi::log()->debug('_removeUserFromGroup', array('$temp' => $temp));
-
-    // Set the group data for the user object in the session.
-    $temp = JFactory::getUser();
-    if ($temp->id == $userId) {
-      $temp->groups = $user->groups;
-    }
-
-    return TRUE;
-  }//_removeUserFromGroup
 
   function _getGroupId($groupName) {
     $db = $this->db;
