@@ -37,13 +37,13 @@ class JFormFieldCiviMembershipLevels extends JFormField {
    */
   protected function getInput() {
     // Initialize variables.
-    $html = array();
+    $html = [];
     $attr = '';
 
     // Initiate CiviCRM
     require_once JPATH_ROOT . '/administrator/components/com_civicrm/civicrm.settings.php';
     require_once 'CRM/Core/Config.php';
-    $config =& CRM_Core_Config::singleton();
+    $config = CRM_Core_Config::singleton();
 
     // Initialize some field attributes.
     $attr .= $this->element['class'] ? ' class="' . (string) $this->element['class'] . '"' : '';
@@ -60,12 +60,16 @@ class JFormFieldCiviMembershipLevels extends JFormField {
     $attr .= $this->element['onchange'] ? ' onchange="' . (string) $this->element['onchange'] . '"' : '';
 
     // Get the field options.
-    $options = array();
-    $options[] = JHTML::_('select.option', '0', JText::_('- Select Membership Level -'));
-    $query = 'SELECT id, name FROM civicrm_membership_status WHERE is_active = 1 ORDER BY id';
-    $dao = CRM_Core_DAO::executeQuery($query);
-    while ($dao->fetch()) {
-      $options[] = JHTML::_('select.option', $dao->id, $dao->name);
+    $options = [];
+    $options[] = JHTML::_('select.option', '0', JText::_('- Select Membership Status -'));
+
+    $membershipStatuses = \Civi\Api4\MembershipStatus::get(FALSE)
+      ->addSelect('name')
+      ->addWhere('is_active', '=', TRUE)
+      ->addOrderBy('id', 'ASC')
+      ->execute();
+    foreach ($membershipStatuses as $membershipStatus) {
+      $options[] = JHTML::_('select.option', $membershipStatus['id'], $membershipStatus['name']);
     }
 
     // Create a read-only list (no name) with a hidden input to store the value.

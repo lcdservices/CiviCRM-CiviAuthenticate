@@ -37,7 +37,7 @@ class JFormFieldCiviMembershipTypes extends JFormField {
    */
   protected function getInput() {
     // Initialize variables.
-    $html = array();
+    $html = [];
 
     // Initiate CiviCRM
     require_once JPATH_ROOT . '/administrator/components/com_civicrm/civicrm.settings.php';
@@ -59,12 +59,16 @@ class JFormFieldCiviMembershipTypes extends JFormField {
     $attr .= $this->element['onchange'] ? ' onchange="' . (string) $this->element['onchange'] . '"' : '';
 
     // Get the field options.
-    $options = array();
+    $options = [];
     $options[] = JHTML::_('select.option', '0', JText::_('- Select Membership Type -'));
-    $query = 'SELECT id, name FROM civicrm_membership_type WHERE is_active = 1 ORDER BY weight';
-    $dao = CRM_Core_DAO::executeQuery($query);
-    while ($dao->fetch()) {
-      $options[] = JHTML::_('select.option', $dao->id, $dao->name);
+
+    $membershipTypes = \Civi\Api4\MembershipType::get(FALSE)
+      ->addSelect('name')
+      ->addWhere('is_active', '=', TRUE)
+      ->addOrderBy('weight', 'ASC')
+      ->execute();
+    foreach ($membershipTypes as $membershipType) {
+      $options[] = JHTML::_('select.option', $membershipType['id'], $membershipType['name']);
     }
 
     // Create a read-only list (no name) with a hidden input to store the value.

@@ -10,6 +10,7 @@ See also: http://wiki.civicrm.org/confluence/display/CRMDOC/Joomla+CiviCRM+Membe
 Major Version Notes
 -------------
 
+* v5.0.x :: Joomla 4 version (not on tested on J3) - see below.
 * v4.2 :: fix getMenu static call
 * v4.1.x :: added option on Membership Type ACL feature to limit to current members. When enabled, the type-based rules are only applied if the user is a current member. When disabled, the rule are applied regardless of status.
 * v4.0.x :: significant restructuring to status/type handling. we now consider both sets of options separately, and outside of the master status check. this allows users to assign based on status and type at the same time. care should be taken to avoid logical conflicts (i.e. where assignments based on type and status would conflict). because this introduces some changes in behavior, please test thoroughly when implementing.
@@ -30,3 +31,8 @@ Minor Version Notes
 * v3.0.5 :: releases the lock on membership type levels in the advanced level option tab. Note that you may only select a membership level and apply the ACL group once (i.e. you may not apply multiple ACL groups to a single membership type).
 
 To access an earlier version, use the branch dropdown, switch to the tags tab, and select the desired version.
+
+Version 5
+---------
+Version 5 is written for Joomla 4.  One of the new features is that you can have unlimited Membership Status and Membership Type rules. However, this is not backwards-compatible with the configuration from previous versions.
+You will need to make a record of all the Status and Type rules from your current version before upgrading and set these up again after installing the upgrade.
