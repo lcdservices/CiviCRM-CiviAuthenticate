@@ -383,7 +383,7 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
     //cycle through and assign groups
     foreach ($assignedGroups as $JGroupID) {
       JLog::add("Adding user $JUserID to group $JGroupID: ", JLog::INFO);
-      if (!UserHelper::addUserToGroup($JUserID, $JGroupID)) {
+      if (!empty($JGroupID) && !UserHelper::addUserToGroup($JUserID, $JGroupID)) {
         return new \Exception(JText::_('Error Adding user to group'));
       }
     }
@@ -458,7 +458,7 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
 
     // Find the CiviCRM ContactID
     require_once 'CRM/Core/BAO/UFMatch.php';
-    CRM_Core_BAO_UFMatch::synchronizeUFMatch($user->name, $user->id, $user->email, 'Joomla');
+    CRM_Core_BAO_UFMatch::synchronizeUFMatch($user, $user->id, $user->email, 'Joomla');
     $contactID = CRM_Core_BAO_UFMatch::getContactId($user->id);
     return $contactID;
   }
