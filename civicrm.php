@@ -14,7 +14,7 @@
  *
  * @author      Henry Bennett <henry@bec-cave.org.uk>
  *              Brian Shaughnessy <brian@lcdservices.biz>
- * @version     5.0.0
+ * @version     6.0.0
  * @package     Joomla
  * @subpackage  JFramework
  * @since       Joomla 1.6
@@ -29,6 +29,7 @@
  * version 2.5.0 by Brian Shaughnessy
  * version 2.6.0 by Brian Shaughnessy (CiviCRM 4.4/Joomla 2.5.18 compatibility)
  * version 5.0.0 by Aidan Saunders (CiviCRM 5.56/Joomla 4 compatibility)
+ * version 6.0.0 (Joomla 5 compatibility)
  *
  * see current notes in the README.md file
  *
@@ -50,6 +51,7 @@ use Joomla\CMS\User\User;
 use Joomla\CMS\User\UserHelper;
 use Joomla\CMS\Router\Route;
 use Joomla\CMS\Uri\Uri;
+use Joomla\CMS\Factory;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -142,8 +144,8 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
                 }
 
                 //CiviCRM: bypass member check for Joomla admins
-                //CiviCRM: use JFactory::getUser to get the object for authorise() function
-                $adminTestUser = JFactory::getUser($result->id);
+                //CiviCRM: use Factory::getUser to get the object for authorise() function
+                $adminTestUser = Factory::getUser($result->id);
                 if ($adminTestUser->authorise('core.login.admin')) {
                     $response->status = Authentication::STATUS_SUCCESS;
                     $response->error_message = '';
