@@ -45,9 +45,11 @@
 use Joomla\CMS\Authentication\Authentication;
 use Joomla\CMS\Helper\AuthenticationHelper;
 use Joomla\CMS\Language\Text;
+use Joomla\CMS\Log\Log;
 use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\CMS\Plugin\PluginHelper;
 use Joomla\CMS\User\User;
+use Joomla\CMS\User\UserFactoryInterface;
 use Joomla\CMS\User\UserHelper;
 use Joomla\CMS\Router\Route;
 use Joomla\CMS\Uri\Uri;
@@ -96,7 +98,7 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
         //CiviCRM: construct redirection urls
         $redirectURLs = self::_getRedirectionURLs();
 
-        //CiviCRM: JLog
+        //CiviCRM: Log
         $response->type = 'CiviCRM';
 
         // Joomla does not like blank passwords
@@ -133,7 +135,7 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
 
             if ($match === true) {
                 // Bring this in line with the rest of the system
-                $user               = User::getInstance($result->id);
+                $user               = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($result->id);
                 $response->email    = $user->email;
                 $response->fullname = $user->name;
 
@@ -144,9 +146,7 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
                 }
 
                 //CiviCRM: bypass member check for Joomla admins
-                //CiviCRM: use Factory::getUser to get the object for authorise() function
-                $adminTestUser = Factory::getUser($result->id);
-                if ($adminTestUser->authorise('core.login.admin')) {
+                if ($user->authorise('core.login.admin')) {
                     $response->status = Authentication::STATUS_SUCCESS;
                     $response->error_message = '';
                 }
@@ -382,9 +382,9 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
 
     //cycle through and assign groups
     foreach ($assignedGroups as $JGroupID) {
-      JLog::add("Adding user $JUserID to group $JGroupID: ", JLog::INFO);
+      Log::add("Adding user $JUserID to group $JGroupID: ", Log::INFO);
       if (!empty($JGroupID) && !UserHelper::addUserToGroup($JUserID, $JGroupID)) {
-        return new \Exception(JText::_('Error Adding user to group'));
+        return new \Exception(Text::_('Error Adding user to group'));
       }
     }
 
@@ -406,7 +406,7 @@ class PlgAuthenticationCiviCRM extends CMSPlugin
         // group was found in array; let's now check that the group we are assigned is the correct level
         // check based on both status and type option; remove if not;
         if (!in_array($JGroupID, $assignedGroups)) {
-          JLog::add("Removing user $JUserID from group $JGroupID: ", JLog::INFO);
+          Log::add("Removing user $JUserID from group $JGroupID: ", Log::INFO);
           UserHelper::removeUserFromGroup($JUserID, $JGroupID);
         }
       }
